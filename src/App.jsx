@@ -185,6 +185,7 @@ export default function App() {
   }
 
   async function saveProduct(productData) {
+    if (busy) throw new Error("Aguarde a operação atual terminar.");
     if (!activePurchase) throw new Error("Não existe uma compra em andamento.");
     if (!deviceName) throw new Error("Informe seu nome antes de adicionar produtos.");
 
@@ -194,18 +195,28 @@ export default function App() {
       id: productData.id ?? crypto.randomUUID(),
       addedByName: existingItem?.addedByName ?? deviceName,
     };
-    await saveSharedItem(activePurchase.id, item, item.addedByName);
-    await refreshPurchases();
-    setError("");
+
+    setBusy(true);
+    try {
+      await saveSharedItem(activePurchase.id, item, item.addedByName);
+      await refreshPurchases();
+      setError("");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function deleteProduct(productId) {
+    if (busy) return;
+    setBusy(true);
     try {
       await deleteSharedItem(productId);
       await refreshPurchases();
       setError("");
     } catch {
       setError("Não foi possível excluir o produto.");
+    } finally {
+      setBusy(false);
     }
   }
 

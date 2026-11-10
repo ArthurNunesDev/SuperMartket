@@ -39,6 +39,7 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         onSave={saveProduct}
         product={editingProduct}
         activeAccount={activeAccount}
+        busy={busy}
       />
 
       <ProductList items={purchase.items} onDelete={onDeleteProduct} onEdit={setEditingProduct} />
