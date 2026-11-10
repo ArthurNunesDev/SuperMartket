@@ -41,7 +41,10 @@ O PIN e a chave de rate limit ficam nos secrets da Edge Function. A chave publis
 Para gerar um segredo aleatório no PowerShell:
 
 ```powershell
-[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLower()
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$bytes = New-Object byte[] 32
+$rng.GetBytes($bytes)
+[BitConverter]::ToString($bytes).Replace("-", "").ToLower()
 ```
 
 A lista compartilhada começa vazia. Dados que já existam no IndexedDB e no armazenamento local dos navegadores não são importados, apagados nem modificados por esta integração.
