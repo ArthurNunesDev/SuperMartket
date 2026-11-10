@@ -5,7 +5,6 @@ import { parseCurrency } from "../utils/currency.js";
 const EMPTY_FORM = {
   name: "",
   quantity: "1",
-  unit: "un",
   unitPrice: "",
 };
 
@@ -23,7 +22,6 @@ export default function ProductForm({ product, onSave, onCancel }) {
     setForm({
       name: product.name,
       quantity: String(product.quantityMilli / 1000).replace(".", ","),
-      unit: product.unit,
       unitPrice: (product.unitPriceCents / 100).toFixed(2).replace(".", ","),
     });
     setError("");
@@ -59,7 +57,7 @@ export default function ProductForm({ product, onSave, onCancel }) {
         ...(product ? { id: product.id } : {}),
         name,
         quantityMilli,
-        unit: form.unit,
+        unit: "un",
         unitPriceCents,
       });
       setForm(EMPTY_FORM);
@@ -96,32 +94,20 @@ export default function ProductForm({ product, onSave, onCancel }) {
         />
       </label>
 
-      <div className="form-grid">
-        <label className="field">
-          <span>Quantidade</span>
-          <input
-            inputMode="decimal"
-            name="quantity"
-            onChange={updateField}
-            placeholder="1"
-            value={form.quantity}
-          />
-        </label>
-
-        <label className="field">
-          <span>Unidade</span>
-          <select name="unit" onChange={updateField} value={form.unit}>
-            <option value="un">Unidade (un)</option>
-            <option value="kg">Quilograma (kg)</option>
-            <option value="g">Grama (g)</option>
-            <option value="L">Litro (L)</option>
-            <option value="ml">Mililitro (ml)</option>
-          </select>
-        </label>
-      </div>
+      <label className="field field-full">
+        <span>Quantidade</span>
+        <input
+          inputMode="decimal"
+          name="quantity"
+          onChange={updateField}
+          placeholder="1"
+          required
+          value={form.quantity}
+        />
+      </label>
 
       <label className="field field-full">
-        <span>Preço por {form.unit}</span>
+        <span>Valor por unidade</span>
         <div className="input-with-prefix">
           <span>R$</span>
           <input
@@ -129,6 +115,7 @@ export default function ProductForm({ product, onSave, onCancel }) {
             name="unitPrice"
             onChange={updateField}
             placeholder="0,00"
+            required
             value={form.unitPrice}
           />
         </div>
