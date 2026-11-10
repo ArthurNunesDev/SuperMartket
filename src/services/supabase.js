@@ -64,6 +64,7 @@ function mapPurchase(row) {
       unit: "un",
       unitPriceCents: item.unit_price_cents,
       addedByName: item.added_by_name,
+      editedByName: item.edited_by_name,
     })),
   };
 }
@@ -71,7 +72,7 @@ function mapPurchase(row) {
 export async function getSharedPurchases() {
   const { data, error } = await supabase
     .from("purchases")
-    .select("id,status,created_at,completed_at,items:purchase_items(id,name,quantity_milli,unit_price_cents,added_by_name,created_at)")
+    .select("id,status,created_at,completed_at,items:purchase_items(id,name,quantity_milli,unit_price_cents,added_by_name,edited_by_name,created_at)")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -114,11 +115,28 @@ export async function saveSharedItem(purchaseId, item, addedByName, isUpdate = f
         name: row.name,
         quantity_milli: row.quantity_milli,
         unit_price_cents: row.unit_price_cents,
+        edited_by_name: item.editedByName,
       }).eq("id", item.id)
     : supabase.from("purchase_items").insert(row);
 
   const { error } = await query;
   if (error) throw error;
+}
+
+
+export async function getSharedItemEditHistory(itemId) {
+  const { data, error } = await supabase
+    .from("purchase_item_edit_history")
+    .select("id,edited_by_name,edited_at")
+    .eq("purchase_item_id", itemId)
+    .order("edited_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((entry) => ({
+    id: entry.id,
+    editedByName: entry.edited_by_name,
+    editedAt: entry.edited_at,
+  }));
 }
 
 export async function deleteSharedItem(itemId) {
