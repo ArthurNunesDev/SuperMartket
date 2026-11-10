@@ -135,8 +135,6 @@ export default function App() {
   async function handleAddAccount(name) {
     const updatedState = addAccount(name);
     setAccountsState(updatedState);
-    setCurrentPage("shopping");
-    setMenuOpen(false);
   }
 
   function handleSelectAccount(accountId) {
