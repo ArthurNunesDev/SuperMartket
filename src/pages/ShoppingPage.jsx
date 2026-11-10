@@ -3,7 +3,7 @@ import ProductForm from "../components/ProductForm.jsx";
 import ProductList from "../components/ProductList.jsx";
 import ShoppingSummary from "../components/ShoppingSummary.jsx";
 
-export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, activeAccount, busy }) {
+export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, onGetEditHistory, activeAccount, busy }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const identityRequired = !activeAccount?.name;
 
@@ -38,6 +38,7 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         key={editingProduct?.id ?? "new-product"}
         onCancel={() => setEditingProduct(null)}
         onSave={saveProduct}
+        onGetEditHistory={onGetEditHistory}
         product={editingProduct}
         activeAccount={activeAccount}
         disabled={identityRequired}
