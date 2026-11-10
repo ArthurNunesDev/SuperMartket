@@ -42,7 +42,7 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
       />
 
       <ProductList items={purchase.items} onDelete={onDeleteProduct} onEdit={setEditingProduct} />
-      <ShoppingSummary items={purchase.items} onFinish={onFinish} />
+      <ShoppingSummary items={purchase.items} onFinish={onFinish} busy={busy} />
     </main>
   );
 }

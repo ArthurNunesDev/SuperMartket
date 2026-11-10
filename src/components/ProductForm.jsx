@@ -4,7 +4,7 @@ import { parseCurrency } from "../utils/currency.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
 
-export default function ProductForm({ product, onSave, onCancel, activeAccount }) {
+export default function ProductForm({ product, onSave, onCancel, activeAccount, busy }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
@@ -59,7 +59,7 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount }
           <span className="eyebrow">{product ? "EDIÇÃO" : "NOVO ITEM"}</span>
           <h2>{product ? "Editar produto" : "Adicionar produto"}</h2>
         </div>
-        {product && <button className="text-button" type="button" onClick={onCancel}>Cancelar</button>}
+        {product && <button className="text-button" disabled={busy} type="button" onClick={onCancel}>Cancelar</button>}
       </div>
 
       <label className="field field-full">
@@ -80,8 +80,8 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount }
 
       {!activeAccount && !product && <p className="account-required-note">Informe seu nome antes de adicionar produtos.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="primary-button form-submit" disabled={!activeAccount && !product} type="submit">
-        {product ? "Salvar alterações" : "Adicionar à compra"}
+      <button className="primary-button form-submit" disabled={busy || (!activeAccount && !product)} type="submit">
+        {busy ? "Salvando..." : product ? "Salvar alterações" : "Adicionar à compra"}
       </button>
     </form>
   );
