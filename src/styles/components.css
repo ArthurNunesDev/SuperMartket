@@ -937,3 +937,103 @@
   color: #f2d28e !important;
   background: #493b22;
 }
+
+
+/* Full-screen loading state inspired by the Mobin page loader. */
+.app-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  color: var(--ink);
+  background: #f4f7f5;
+  animation: app-loader-appear 180ms ease both;
+}
+
+:root[data-theme="dark"] .app-loading-overlay {
+  background: #111a15;
+}
+
+.app-loading-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-loading-brand strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+}
+
+.app-loading-mark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--green);
+  background: var(--green-soft);
+  box-shadow: 0 0 0 1px rgba(23, 107, 80, 0.06);
+  font-size: 1.35rem;
+  font-weight: 850;
+  animation: app-loader-pulse 1.35s ease-in-out infinite;
+}
+
+.app-loading-track {
+  width: min(210px, 60vw);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.app-loading-track span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  animation: app-loader-progress 1.15s ease-in-out infinite;
+}
+
+.app-loading-overlay p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+@keyframes app-loader-progress {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(260%); }
+}
+
+@keyframes app-loader-pulse {
+  0%, 100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(23, 107, 80, 0.16); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 9px rgba(23, 107, 80, 0); }
+}
+
+@keyframes app-loader-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-overlay,
+  .app-loading-mark,
+  .app-loading-track span {
+    animation: none;
+  }
+
+  .app-loading-track span {
+    width: 100%;
+  }
+}
