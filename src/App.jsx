@@ -4,7 +4,7 @@ import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
 import {
   authorizeWithFamilyPin,
-  lockDeviceAccess,
+  checkDeviceAccess,
   completeSharedPurchase,
   createSharedPurchase,
   deleteSharedItem,
@@ -88,12 +88,25 @@ export default function App() {
     async function initialize() {
       try {
         await ensureDeviceSession();
-        await lockDeviceAccess();
+        const deviceIsAuthorized = await checkDeviceAccess();
         if (!mounted) return;
 
-        setAuthorized(false);
         setAccessError("");
-        setAccessStep("pin");
+        if (!deviceIsAuthorized) {
+          setAuthorized(false);
+          setAccessStep("pin");
+          return;
+        }
+
+        setAuthorized(true);
+        const storedName = getStoredDeviceName();
+        setDeviceName(storedName);
+        setAccessStep(storedName ? "ready" : "name");
+        await refreshPurchases();
+        realtimeCleanupRef.current?.();
+        realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
+          refreshPurchases().catch(() => setError("Não foi possível atualizar a lista compartilhada."));
+        }, (subscriptionError) => setError(subscriptionError.message));
       } catch (initializationError) {
         if (mounted) {
           setError(initializationError instanceof Error
