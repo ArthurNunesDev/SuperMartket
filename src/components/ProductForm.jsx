@@ -121,7 +121,7 @@ export default function ProductForm({ product, onSave, onCancel }) {
       </div>
 
       <label className="field field-full">
-        <span>Preço por unidade</span>
+        <span>Preço por {form.unit}</span>
         <div className="input-with-prefix">
           <span>R$</span>
           <input
