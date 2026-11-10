@@ -8,7 +8,7 @@ const EMPTY_FORM = {
   unitPrice: "",
 };
 
-export default function ProductForm({ product, onSave, onCancel }) {
+export default function ProductForm({ product, onSave, onCancel, activeAccount }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
@@ -121,9 +121,10 @@ export default function ProductForm({ product, onSave, onCancel }) {
         </div>
       </label>
 
+      {!activeAccount && !product && <p className="account-required-note">Cadastre ou selecione uma conta no menu antes de adicionar produtos.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
 
-      <button className="primary-button form-submit" type="submit">
+      <button className="primary-button form-submit" disabled={!activeAccount && !product} type="submit">
         {product ? "Salvar alterações" : "Adicionar à compra"}
       </button>
     </form>
