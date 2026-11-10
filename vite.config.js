@@ -53,13 +53,12 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            event.waitUntil(
-              caches.open(CACHE_NAME).then((cache) => cache.put(APP_BASE, copy))
-            );
-          }
-          return response;
+          if (!response.ok) return response;
+
+          const copy = response.clone();
+          return caches.open(CACHE_NAME)
+            .then((cache) => cache.put(APP_BASE, copy))
+            .then(() => response);
         })
         .catch(() => caches.match(APP_BASE))
     );
@@ -72,13 +71,12 @@ self.addEventListener("fetch", (event) => {
         if (cached) return cached;
 
         return fetch(request).then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            event.waitUntil(
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
-            );
-          }
-          return response;
+          if (!response.ok) return response;
+
+          const copy = response.clone();
+          return caches.open(CACHE_NAME)
+            .then((cache) => cache.put(request, copy))
+            .then(() => response);
         });
       })
     );
