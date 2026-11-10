@@ -5,6 +5,7 @@ import ShoppingSummary from "../components/ShoppingSummary.jsx";
 
 export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, activeAccount, busy }) {
   const [editingProduct, setEditingProduct] = useState(null);
+  const identityRequired = !activeAccount?.name;
 
   if (!purchase) {
     return (
@@ -13,7 +14,7 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
           <div className="empty-icon" aria-hidden="true">🧺</div>
           <h1>Nenhuma compra em andamento</h1>
           <p>Comece uma nova lista compartilhada para registrar os produtos e acompanhar o total.</p>
-          <button className="primary-button" disabled={busy} onClick={onStart} type="button">Iniciar compra</button>
+          <button className="primary-button" disabled={busy || identityRequired} onClick={onStart} type="button">Iniciar compra</button>
         </div>
       </main>
     );
@@ -39,11 +40,12 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         onSave={saveProduct}
         product={editingProduct}
         activeAccount={activeAccount}
+        disabled={identityRequired}
         busy={busy}
       />
 
-      <ProductList items={purchase.items} onDelete={onDeleteProduct} onEdit={setEditingProduct} />
-      <ShoppingSummary items={purchase.items} onFinish={onFinish} busy={busy} />
+      <ProductList items={purchase.items} onDelete={onDeleteProduct} onEdit={setEditingProduct} disabled={identityRequired} />
+      <ShoppingSummary items={purchase.items} onFinish={onFinish} busy={busy} disabled={identityRequired} />
     </main>
   );
 }
