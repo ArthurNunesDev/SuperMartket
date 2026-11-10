@@ -178,7 +178,7 @@ export default function App() {
           <div className="menu-container">
             <button
               aria-expanded={menuOpen}
-              aria-haspopup="true"
+              aria-controls="main-menu"
               aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
               className="header-icon-button menu-toggle"
               onClick={() => setMenuOpen((open) => !open)}
@@ -192,7 +192,7 @@ export default function App() {
             </button>
 
             {menuOpen && (
-              <nav aria-label="Menu principal" className="dropdown-menu">
+              <nav aria-label="Menu principal" className="dropdown-menu" id="main-menu">
                 <button
                   aria-current={currentPage === "history" ? "page" : undefined}
                   className={currentPage === "history" ? "dropdown-item active" : "dropdown-item"}
