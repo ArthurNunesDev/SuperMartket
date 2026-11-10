@@ -139,6 +139,27 @@ export async function getSharedItemEditHistory(itemId) {
   }));
 }
 
+
+export function subscribeToSharedItemEditHistory(itemId, onChange, onError) {
+  const channel = supabase
+    .channel(`purchase-item-edit-history-${itemId}`)
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "purchase_item_edit_history",
+      filter: `purchase_item_id=eq.${itemId}`,
+    }, onChange)
+    .subscribe((status) => {
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        onError?.(new Error("Não foi possível acompanhar o histórico em tempo real."));
+      }
+    });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
 export async function deleteSharedItem(itemId) {
   const { error } = await supabase.from("purchase_items").delete().eq("id", itemId);
   if (error) throw error;
