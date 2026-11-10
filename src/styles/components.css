@@ -15,6 +15,83 @@
   border-bottom: 1px solid var(--line);
 }
 
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icon-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 1.25rem;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.header-icon-button:hover {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.menu-container { position: relative; }
+
+.hamburger-icon {
+  width: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.hamburger-icon span {
+  width: 18px;
+  height: 2px;
+  display: block;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.hamburger-icon.is-open span:first-child { transform: translateY(6px) rotate(45deg); }
+.hamburger-icon.is-open span:nth-child(2) { opacity: 0; }
+.hamburger-icon.is-open span:last-child { transform: translateY(-6px) rotate(-45deg); }
+
+.dropdown-menu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 9px);
+  right: 0;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.dropdown-item {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.dropdown-item:hover, .dropdown-item.active {
+  color: var(--green-dark);
+  background: var(--green-soft);
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -541,3 +618,44 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+:root[data-theme="dark"] .field > span { color: #c6d2ca; }
+
+:root[data-theme="dark"] .field input,
+:root[data-theme="dark"] .field select {
+  border-color: #3b4b41;
+  color: var(--ink);
+  background: #17221c;
+}
+
+:root[data-theme="dark"] .field input::placeholder { color: #7f9085; }
+
+:root[data-theme="dark"] .input-with-prefix {
+  border-color: #3b4b41;
+  background: #17221c;
+}
+
+:root[data-theme="dark"] .input-with-prefix input { background: transparent; }
+
+:root[data-theme="dark"] .icon-button {
+  color: #c0ccc4;
+  background: #29372f;
+}
+
+:root[data-theme="dark"] .icon-button:hover {
+  color: var(--green-dark);
+  background: var(--green-soft);
+}
+
+:root[data-theme="dark"] .danger-action:hover {
+  color: #ffaaaa;
+  background: #482b2b;
+}
+
+:root[data-theme="dark"] .app-error {
+  border-color: #633b3b;
+  color: #ffb6b6;
+  background: #382323;
+}
+
+:root[data-theme="dark"] .app-footer { color: #819187; }
