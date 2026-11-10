@@ -199,7 +199,13 @@ export default function App() {
       ...productData,
       id: productData.id ?? crypto.randomUUID(),
       addedByName: existingItem?.addedByName ?? deviceName,
-      editedByName: productData.id ? deviceName : null,
+      editedByName: existingItem
+        ? (
+          existingItem.name !== productData.name
+          || existingItem.quantityMilli !== productData.quantityMilli
+          || existingItem.unitPriceCents !== productData.unitPriceCents
+        ) ? deviceName : existingItem.editedByName ?? null
+        : null,
     };
 
     setBusy(true);
