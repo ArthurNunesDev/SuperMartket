@@ -29,7 +29,7 @@ export default function ProductList({ items, onEdit, onDelete }) {
             <div className="product-main">
               <strong>{item.name}</strong>
               <span>
-                {formatQuantity(item.quantityMilli)} {item.unit} × {formatCurrency(item.unitPriceCents)}
+                {formatQuantity(item.quantityMilli)} × {formatCurrency(item.unitPriceCents)}
               </span>
             </div>
             <div className="product-end">
