@@ -1,3 +1,4 @@
+import React from "react";
 import { calculateItemSubtotal, formatQuantity } from "../utils/calculations.js";
 import { formatCurrency } from "../utils/currency.js";
 
