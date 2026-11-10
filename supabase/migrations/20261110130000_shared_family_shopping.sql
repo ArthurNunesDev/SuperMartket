@@ -48,7 +48,6 @@ create table if not exists public.purchase_items (
 
 alter table public.purchases enable row level security;
 alter table public.purchase_items enable row level security;
-
 revoke all on public.purchases, public.purchase_items from public, anon;
 grant select, insert, update, delete on public.purchases, public.purchase_items to authenticated;
 grant all on public.purchases, public.purchase_items to service_role;
@@ -61,8 +60,7 @@ security definer
 set search_path = pg_catalog
 as $$
   select exists (
-    select 1
-    from private.family_devices device
+    select 1 from private.family_devices device
     where device.user_id = (select auth.uid())
   );
 $$;
@@ -108,7 +106,8 @@ security definer
 set search_path = pg_catalog
 as $$
 declare
-  attempt_count integer;
+  device_attempts integer;
+  ip_attempts integer;
 begin
   if p_device_fingerprint !~ '^[0-9a-f]{64}$'
      or p_ip_fingerprint !~ '^[0-9a-f]{64}$' then
@@ -127,12 +126,15 @@ begin
   delete from private.family_pin_attempts
   where attempted_at < now() - interval '1 day';
 
-  select count(*)::integer into attempt_count
+  select
+    count(*) filter (where fingerprint = p_device_fingerprint)::integer,
+    count(*) filter (where fingerprint = p_ip_fingerprint)::integer
+  into device_attempts, ip_attempts
   from private.family_pin_attempts
   where fingerprint in (p_device_fingerprint, p_ip_fingerprint)
     and attempted_at > now() - interval '15 minutes';
 
-  if attempt_count >= 5 then
+  if device_attempts >= 5 or ip_attempts >= 5 then
     return false;
   end if;
 
@@ -187,6 +189,5 @@ begin
 end;
 $$;
 
--- Restrict the platform's automatic-RLS event-trigger function to trusted roles.
 revoke all on function public.rls_auto_enable() from public, anon, authenticated;
 grant execute on function public.rls_auto_enable() to postgres;
