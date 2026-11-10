@@ -99,7 +99,7 @@ export async function createSharedPurchase() {
   throw error;
 }
 
-export async function saveSharedItem(purchaseId, item, addedByName) {
+export async function saveSharedItem(purchaseId, item, addedByName, isUpdate = false) {
   const row = {
     id: item.id,
     purchase_id: purchaseId,
@@ -109,7 +109,7 @@ export async function saveSharedItem(purchaseId, item, addedByName) {
     added_by_name: addedByName,
   };
 
-  const query = item.id
+  const query = isUpdate
     ? supabase.from("purchase_items").update({
         name: row.name,
         quantity_milli: row.quantity_milli,

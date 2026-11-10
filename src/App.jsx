@@ -200,7 +200,7 @@ export default function App() {
 
     setBusy(true);
     try {
-      await saveSharedItem(activePurchase.id, item, item.addedByName);
+      await saveSharedItem(activePurchase.id, item, item.addedByName, Boolean(productData.id));
       await refreshPurchases();
       setError("");
     } finally {
