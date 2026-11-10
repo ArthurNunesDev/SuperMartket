@@ -17,49 +17,51 @@
   --surface: #ffffff;
   --danger: #b54747;
   --shadow: 0 12px 32px rgba(27, 58, 43, 0.06);
+  color-scheme: light;
 }
 
-* {
-  box-sizing: border-box;
+:root[data-theme="dark"] {
+  color: #e7eee9;
+  background: #111a15;
+  --green: #66c99d;
+  --green-dark: #8adbb4;
+  --green-soft: #203d31;
+  --ink: #e7eee9;
+  --muted: #a2b0a7;
+  --line: #34443b;
+  --surface: #1d2a23;
+  --danger: #ff9292;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  color-scheme: dark;
 }
+
+* { box-sizing: border-box; }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: inherit;
 }
 
-button,
-input,
-select {
-  font: inherit;
-}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
 
-button {
-  cursor: pointer;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible {
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
   outline: 3px solid rgba(23, 107, 80, 0.28);
   outline-offset: 2px;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+:root[data-theme="dark"] button:focus-visible,
+:root[data-theme="dark"] a:focus-visible,
+:root[data-theme="dark"] input:focus-visible,
+:root[data-theme="dark"] select:focus-visible {
+  outline-color: rgba(102, 201, 157, 0.45);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-#root {
-  min-height: 100vh;
-}
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+a { color: inherit; text-decoration: none; }
+#root { min-height: 100vh; }
 
 ::selection {
   color: #fff;
