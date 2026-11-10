@@ -1,3 +1,4 @@
+import React from "react";
 import { calculatePurchaseTotal } from "../utils/calculations.js";
 import { formatCurrency } from "../utils/currency.js";
 
