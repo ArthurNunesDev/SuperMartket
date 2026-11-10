@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ShoppingPage from "./pages/ShoppingPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
@@ -237,7 +237,7 @@ export default function App() {
     }
   }
 
-  const historyPurchases = useMemo(() => completedPurchases, [completedPurchases]);
+  const historyPurchases = completedPurchases;
 
   return (
     <div className="app-shell">
