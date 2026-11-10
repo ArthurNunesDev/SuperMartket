@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { parseQuantity } from "../utils/calculations.js";
 import { parseCurrency } from "../utils/currency.js";
+import { subscribeToSharedItemEditHistory } from "../services/supabase.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
 
@@ -29,23 +30,38 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
     setHistoryError("");
   }, [product]);
 
-  async function toggleEditHistory() {
-    if (historyOpen) {
-      setHistoryOpen(false);
-      return;
+  useEffect(() => {
+    if (!product || !historyOpen) return undefined;
+    let active = true;
+
+    async function loadHistory() {
+      setHistoryLoading(true);
+      setHistoryError("");
+      try {
+        const entries = await onGetEditHistory(product.id);
+        if (active) setEditHistory(entries);
+      } catch {
+        if (active) setHistoryError("Não foi possível carregar o histórico de edições.");
+      } finally {
+        if (active) setHistoryLoading(false);
+      }
     }
-    setHistoryOpen(true);
-    if (editHistory.length || historyLoading) return;
-    setHistoryLoading(true);
-    setHistoryError("");
-    try {
-      const entries = await onGetEditHistory(product.id);
-      setEditHistory(entries);
-    } catch {
-      setHistoryError("Não foi possível carregar o histórico de edições.");
-    } finally {
-      setHistoryLoading(false);
-    }
+
+    loadHistory();
+    const unsubscribe = subscribeToSharedItemEditHistory(product.id, () => {
+      loadHistory();
+    }, (subscriptionError) => {
+      if (active) setHistoryError(subscriptionError.message);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [product, historyOpen, onGetEditHistory]);
+
+  function toggleEditHistory() {
+    setHistoryOpen((open) => !open);
   }
 
   function updateField(event) {
