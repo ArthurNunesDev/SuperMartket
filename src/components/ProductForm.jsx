@@ -5,7 +5,7 @@ import { subscribeToSharedItemEditHistory } from "../services/supabase.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
 
-export default function ProductForm({ product, onSave, onCancel, onGetEditHistory, activeAccount, busy, disabled = false }) {
+export default function ProductForm({ product, onSave, onCancel, onGetEditHistory, onHistoryLoadingChange, activeAccount, busy, disabled = false }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -36,6 +36,7 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
 
     async function loadHistory() {
       setHistoryLoading(true);
+      onHistoryLoadingChange?.(true);
       setHistoryError("");
       try {
         const entries = await onGetEditHistory(product.id);
@@ -43,7 +44,10 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
       } catch {
         if (active) setHistoryError("Não foi possível carregar o histórico de edições.");
       } finally {
-        if (active) setHistoryLoading(false);
+        if (active) {
+          setHistoryLoading(false);
+          onHistoryLoadingChange?.(false);
+        }
       }
     }
 
@@ -56,9 +60,10 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
 
     return () => {
       active = false;
+      onHistoryLoadingChange?.(false);
       unsubscribe();
     };
-  }, [product, historyOpen, onGetEditHistory]);
+  }, [product, historyOpen, onGetEditHistory, onHistoryLoadingChange]);
 
   function toggleEditHistory() {
     setHistoryOpen((open) => !open);
