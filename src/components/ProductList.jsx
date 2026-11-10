@@ -30,6 +30,7 @@ export default function ProductList({ items, onEdit, onDelete }) {
               <strong>{item.name}</strong>
               <span>
                 {formatQuantity(item.quantityMilli)} × {formatCurrency(item.unitPriceCents)}
+                <span className="product-author">Adicionado por {item.addedByName || "não identificado"}</span>
               </span>
             </div>
             <div className="product-end">
