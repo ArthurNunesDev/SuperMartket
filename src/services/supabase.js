@@ -40,9 +40,10 @@ async function invokeFamilyAccess(body) {
   return data;
 }
 
-export async function checkDeviceAuthorization() {
-  const result = await invokeFamilyAccess({ checkOnly: true });
-  return result.authorized === true;
+export async function lockDeviceAccess() {
+  const result = await invokeFamilyAccess({ lock: true });
+  if (result.locked !== true) throw new Error("Não foi possível bloquear o acesso antes de validar o PIN.");
+  return true;
 }
 
 export async function authorizeWithFamilyPin(pin) {
