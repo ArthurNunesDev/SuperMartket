@@ -9,11 +9,13 @@ Aplicativo mobile-first para registrar produtos durante as compras de supermerca
 ## Escopo atual
 
 - Criar uma compra e registrar produtos.
-- Informar quantidade, unidade e preço por unidade.
+- Informar nome, quantidade e preço por unidade.
 - Calcular subtotais e total automaticamente.
+- Cadastrar nomes da família e selecionar a conta ativa.
+- Identificar quem adicionou cada produto à lista.
 - Editar e remover produtos.
 - Finalizar compras e consultar o histórico.
-- Manter os dados localmente no dispositivo com IndexedDB.
+- Manter compras no IndexedDB e contas no armazenamento local do navegador.
 - Instalar como PWA e disponibilizar o app shell para uso offline após o primeiro carregamento completo.
 
 ## Tecnologias
