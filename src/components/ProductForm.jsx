@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { parseQuantity } from "../utils/calculations.js";
 import { parseCurrency } from "../utils/currency.js";
 
