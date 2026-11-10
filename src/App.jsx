@@ -155,6 +155,10 @@ export default function App() {
   }
 
   async function startPurchase() {
+    if (!authorized || !deviceName || accessStep !== "ready") {
+      setAccessStep("name");
+      return;
+    }
     setBusy(true);
     try {
       await createSharedPurchase();
@@ -169,6 +173,9 @@ export default function App() {
   }
 
   async function saveProduct(productData) {
+    if (!authorized || !deviceName || accessStep !== "ready") {
+      throw new Error("Informe seu nome antes de utilizar a lista.");
+    }
     if (busy) throw new Error("Aguarde a operação atual terminar.");
     if (!activePurchase) throw new Error("Não existe uma compra em andamento.");
     if (!deviceName) throw new Error("Informe seu nome antes de adicionar produtos.");
@@ -191,7 +198,7 @@ export default function App() {
   }
 
   async function deleteProduct(productId) {
-    if (busy) return;
+    if (!authorized || !deviceName || accessStep !== "ready" || busy) return;
     setBusy(true);
     try {
       await deleteSharedItem(productId);
@@ -205,6 +212,10 @@ export default function App() {
   }
 
   async function finishPurchase() {
+    if (!authorized || !deviceName || accessStep !== "ready") {
+      setAccessStep("name");
+      return;
+    }
     if (!activePurchase || activePurchase.items.length === 0) return;
     setBusy(true);
     try {
@@ -236,12 +247,6 @@ export default function App() {
         </a>
 
         <div className="header-actions">
-          {authorized && !deviceName && accessStep === "ready" && (
-            <button className="identify-button" onClick={() => {
-              setAccessError("");
-              setAccessStep("name");
-            }} type="button">Informar nome</button>
-          )}
           <button
             aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
             className="header-icon-button theme-toggle"
@@ -252,7 +257,7 @@ export default function App() {
             <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
           </button>
 
-          {authorized && (
+          {authorized && deviceName && accessStep === "ready" && (
             <div className="menu-container">
               <button
                 aria-expanded={menuOpen}
@@ -306,15 +311,10 @@ export default function App() {
           error={accessError}
           busy={busy}
         />
-      ) : accessStep === "name" ? (
+      ) : accessStep === "name" || !deviceName ? (
         <AccessPage
           step="name"
           onSubmitName={handleSubmitName}
-          onBack={() => {
-            setAccessError("");
-            setAccessStep("ready");
-            setCurrentPage("shopping");
-          }}
           error={accessError}
           busy={busy}
         />
@@ -322,12 +322,6 @@ export default function App() {
         <HistoryPage purchases={historyPurchases} onBack={() => setCurrentPage("shopping")} />
       ) : (
         <>
-          {!deviceName && (
-            <div className="identity-reminder" role="status">
-              Informe seu nome para poder adicionar produtos.
-              <button className="text-button" onClick={() => setAccessStep("name")} type="button">Identificar agora</button>
-            </div>
-          )}
           <ShoppingPage
             onDeleteProduct={deleteProduct}
             onFinish={finishPurchase}
