@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ShoppingPage from "./pages/ShoppingPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
@@ -47,6 +47,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [accessError, setAccessError] = useState("");
+  const realtimeCleanupRef = useRef(null);
 
   const refreshPurchases = useCallback(async () => {
     const purchases = await getSharedPurchases();
@@ -126,6 +127,8 @@ export default function App() {
     return () => {
       mounted = false;
       unsubscribe?.();
+      realtimeCleanupRef.current?.();
+      realtimeCleanupRef.current = null;
     };
   }, [refreshPurchases]);
 
@@ -138,11 +141,11 @@ export default function App() {
       await refreshPurchases();
       setAccessStep("name");
       setError("");
-      const unsubscribe = subscribeToSharedPurchases(() => {
+      realtimeCleanupRef.current?.();
+      realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
         refreshPurchases().catch(() => setError("Não foi possível atualizar a lista compartilhada."));
       }, (subscriptionError) => setError(subscriptionError.message));
-      window.__supermartketRealtimeCleanup?.();
-      window.__supermartketRealtimeCleanup = unsubscribe;
+
     } catch (pinError) {
       setAccessError(pinError instanceof Error ? pinError.message : "Não foi possível validar o PIN.");
     } finally {
@@ -170,8 +173,8 @@ export default function App() {
   async function startPurchase() {
     setBusy(true);
     try {
-      const purchase = await createSharedPurchase();
-      setActivePurchase(purchase);
+      await createSharedPurchase();
+      await refreshPurchases();
       setCurrentPage("shopping");
       setError("");
     } catch (startError) {
