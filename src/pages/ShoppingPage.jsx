@@ -3,7 +3,7 @@ import ProductForm from "../components/ProductForm.jsx";
 import ProductList from "../components/ProductList.jsx";
 import ShoppingSummary from "../components/ShoppingSummary.jsx";
 
-export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart }) {
+export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, activeAccount }) {
   const [editingProduct, setEditingProduct] = useState(null);
 
   if (!purchase) {
@@ -30,6 +30,7 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         <span className="eyebrow">COMPRA EM ANDAMENTO</span>
         <h1>Vamos às compras.</h1>
         <p>Adicione os produtos conforme encontrar cada item.</p>
+        {activeAccount && <p className="active-account-note">Adicionando como <strong>{activeAccount.name}</strong></p>}
       </div>
 
       <ProductForm
@@ -37,6 +38,7 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         onCancel={() => setEditingProduct(null)}
         onSave={saveProduct}
         product={editingProduct}
+        activeAccount={activeAccount}
       />
 
       <ProductList
