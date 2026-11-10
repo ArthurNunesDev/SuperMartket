@@ -3,6 +3,16 @@ import { getActivePurchase, getCompletedPurchases, savePurchase } from "./servic
 import ShoppingPage from "./pages/ShoppingPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 
+const THEME_STORAGE_KEY = "supermartket-theme";
+
+function getInitialTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
 function createPurchase() {
   return {
     id: crypto.randomUUID(),
@@ -16,8 +26,35 @@ export default function App() {
   const [activePurchase, setActivePurchase] = useState(null);
   const [completedPurchases, setCompletedPurchases] = useState([]);
   const [currentPage, setCurrentPage] = useState("shopping");
+  const [theme, setTheme] = useState(getInitialTheme);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      "content",
+      theme === "dark" ? "#111a15" : "#f4f7f5"
+    );
+
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // The theme remains available for the current session if storage is unavailable.
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -122,24 +159,55 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <a className="brand" href="/" onClick={(event) => { event.preventDefault(); setCurrentPage("shopping"); }}>
+        <a className="brand" href="/" onClick={(event) => { event.preventDefault(); setCurrentPage("shopping"); setMenuOpen(false); }}>
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>SuperMartket</span>
         </a>
-        <nav aria-label="Navegação principal" className="main-nav">
+
+        <div className="header-actions">
           <button
-            aria-current={currentPage === "shopping" ? "page" : undefined}
-            className={currentPage === "shopping" ? "nav-button active" : "nav-button"}
-            onClick={() => setCurrentPage("shopping")}
+            aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+            className="header-icon-button theme-toggle"
+            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
             type="button"
-          >Compra atual</button>
-          <button
-            aria-current={currentPage === "history" ? "page" : undefined}
-            className={currentPage === "history" ? "nav-button active" : "nav-button"}
-            onClick={() => setCurrentPage("history")}
-            type="button"
-          >Histórico</button>
-        </nav>
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+          </button>
+
+          <div className="menu-container">
+            <button
+              aria-expanded={menuOpen}
+              aria-haspopup="true"
+              aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+              className="header-icon-button menu-toggle"
+              onClick={() => setMenuOpen((open) => !open)}
+              type="button"
+            >
+              <span className={menuOpen ? "hamburger-icon is-open" : "hamburger-icon"} aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </button>
+
+            {menuOpen && (
+              <nav aria-label="Menu principal" className="dropdown-menu">
+                <button
+                  aria-current={currentPage === "history" ? "page" : undefined}
+                  className={currentPage === "history" ? "dropdown-item active" : "dropdown-item"}
+                  onClick={() => {
+                    setCurrentPage("history");
+                    setMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Histórico
+                </button>
+              </nav>
+            )}
+          </div>
+        </div>
       </header>
 
       {error && <div className="app-error" role="alert">{error}</div>}
