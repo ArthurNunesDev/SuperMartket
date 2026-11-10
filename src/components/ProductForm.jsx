@@ -4,9 +4,13 @@ import { parseCurrency } from "../utils/currency.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
 
-export default function ProductForm({ product, onSave, onCancel, activeAccount, busy, disabled = false }) {
+export default function ProductForm({ product, onSave, onCancel, onGetEditHistory, activeAccount, busy, disabled = false }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [editHistory, setEditHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
 
   useEffect(() => {
     if (!product) {
@@ -20,7 +24,29 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount, 
       unitPrice: (product.unitPriceCents / 100).toFixed(2).replace(".", ","),
     });
     setError("");
+    setHistoryOpen(false);
+    setEditHistory([]);
+    setHistoryError("");
   }, [product]);
+
+  async function toggleEditHistory() {
+    if (historyOpen) {
+      setHistoryOpen(false);
+      return;
+    }
+    setHistoryOpen(true);
+    if (editHistory.length || historyLoading) return;
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const entries = await onGetEditHistory(product.id);
+      setEditHistory(entries);
+    } catch {
+      setHistoryError("Não foi possível carregar o histórico de edições.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -63,7 +89,7 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount, 
           <span className="eyebrow">{product ? "EDIÇÃO" : "NOVO ITEM"}</span>
           <h2>{product ? "Editar produto" : "Adicionar produto"}</h2>
         </div>
-        {product && <button className="text-button" disabled={busy || disabled || !activeAccount?.name} type="button" onClick={onCancel}>Cancelar</button>}
+        {product && <div className="product-form-actions"><button className="text-button" disabled={busy || disabled || !activeAccount?.name} type="button" onClick={toggleEditHistory}>Histórico de edições</button><button className="text-button" disabled={busy || disabled || !activeAccount?.name} type="button" onClick={onCancel}>Cancelar</button></div>}
       </div>
 
       <label className="field field-full">
@@ -83,6 +109,20 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount, 
       </label>
 
       {!activeAccount && !product && <p className="account-required-note">Informe seu nome antes de adicionar produtos.</p>}
+      {product && historyOpen && (
+        <section className="edit-history" aria-label="Histórico de edições">
+          <h3>Histórico de edições</h3>
+          {historyLoading ? <p>Carregando histórico...</p>
+            : historyError ? <p className="form-error" role="alert">{historyError}</p>
+            : editHistory.length === 0 ? <p>Nenhuma edição registrada.</p>
+            : <ol>{editHistory.map((entry) => (
+              <li key={entry.id}>
+                <strong>Editado por {entry.editedByName}</strong>
+                <time dateTime={entry.editedAt}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.editedAt))}</time>
+              </li>
+            ))}</ol>}
+        </section>
+      )}
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary-button form-submit" disabled={busy || disabled || !activeAccount?.name} type="submit">
         {busy ? "Salvando..." : product ? "Salvar alterações" : "Adicionar à compra"}
