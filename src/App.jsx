@@ -85,8 +85,6 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
-    let unsubscribe = null;
-
     async function initialize() {
       try {
         await ensureDeviceSession();
@@ -111,7 +109,6 @@ export default function App() {
     initialize();
     return () => {
       mounted = false;
-      unsubscribe?.();
       realtimeCleanupRef.current?.();
       realtimeCleanupRef.current = null;
     };
