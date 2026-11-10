@@ -109,7 +109,15 @@ export async function saveSharedItem(purchaseId, item, addedByName) {
     added_by_name: addedByName,
   };
 
-  const { error } = await supabase.from("purchase_items").upsert(row, { onConflict: "id" });
+  const query = item.id
+    ? supabase.from("purchase_items").update({
+        name: row.name,
+        quantity_milli: row.quantity_milli,
+        unit_price_cents: row.unit_price_cents,
+      }).eq("id", item.id)
+    : supabase.from("purchase_items").insert(row);
+
+  const { error } = await query;
   if (error) throw error;
 }
 
