@@ -45,21 +45,35 @@ export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const refreshCountRef = useRef(0);
   const [error, setError] = useState("");
   const [accessError, setAccessError] = useState("");
   const realtimeCleanupRef = useRef(null);
 
   const refreshPurchases = useCallback(async () => {
-    const purchases = await getSharedPurchases();
-    const active = purchases.find((purchase) => purchase.status === "active") ?? null;
-    const history = purchases
-      .filter((purchase) => purchase.status === "completed")
-      .sort((first, second) =>
-        (second.completedAt ?? second.createdAt).localeCompare(first.completedAt ?? first.createdAt)
-      );
-    setActivePurchase(active);
-    setCompletedPurchases(history);
+    refreshCountRef.current += 1;
+    setRefreshing(true);
+    try {
+      const purchases = await getSharedPurchases();
+      const active = purchases.find((purchase) => purchase.status === "active") ?? null;
+      const history = purchases
+        .filter((purchase) => purchase.status === "completed")
+        .sort((first, second) =>
+          (second.completedAt ?? second.createdAt).localeCompare(first.completedAt ?? first.createdAt)
+        );
+      setActivePurchase(active);
+      setCompletedPurchases(history);
+    } finally {
+      refreshCountRef.current -= 1;
+      setRefreshing(refreshCountRef.current > 0);
+    }
+  }, []);
+
+  const handleHistoryLoadingChange = useCallback((isLoading) => {
+    setHistoryLoading(isLoading);
   }, []);
 
   useEffect(() => {
@@ -254,6 +268,7 @@ export default function App() {
   }
 
   const historyPurchases = completedPurchases;
+  const showLoader = loading || accessStep === "loading" || refreshing || historyLoading || busy;
 
   return (
     <div className="app-shell">
@@ -348,6 +363,7 @@ export default function App() {
             onFinish={finishPurchase}
             onSaveProduct={saveProduct}
             onGetEditHistory={getSharedItemEditHistory}
+            onHistoryLoadingChange={handleHistoryLoadingChange}
             onStart={startPurchase}
             activeAccount={deviceName ? { name: deviceName } : null}
             purchase={activePurchase}
@@ -359,6 +375,17 @@ export default function App() {
       <footer className="app-footer">
         {authorized ? "Lista compartilhada entre os dispositivos da família." : "Acesso restrito à família."}
       </footer>
+
+      {showLoader && (
+        <div className="app-loading-overlay" role="status" aria-live="polite" aria-label="Carregando">
+          <div className="app-loading-brand">
+            <span className="app-loading-mark" aria-hidden="true">S</span>
+            <strong>SuperMartket</strong>
+          </div>
+          <div className="app-loading-track" aria-hidden="true"><span /></div>
+          <p>Preparando sua experiência</p>
+        </div>
+      )}
     </div>
   );
 }
