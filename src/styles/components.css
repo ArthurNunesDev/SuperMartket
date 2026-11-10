@@ -735,6 +735,8 @@
 }
 
 .product-author {
+  display: block;
+  margin-top: 3px;
   color: var(--muted);
   font-size: 0.7rem;
   font-weight: 550;
