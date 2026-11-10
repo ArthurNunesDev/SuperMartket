@@ -10,6 +10,7 @@ import {
   deleteSharedItem,
   ensureDeviceSession,
   getSharedPurchases,
+  getSharedItemEditHistory,
   saveSharedItem,
   subscribeToSharedPurchases,
 } from "./services/supabase.js";
@@ -198,6 +199,7 @@ export default function App() {
       ...productData,
       id: productData.id ?? crypto.randomUUID(),
       addedByName: existingItem?.addedByName ?? deviceName,
+      editedByName: productData.id ? deviceName : null,
     };
 
     setBusy(true);
@@ -339,6 +341,7 @@ export default function App() {
             onDeleteProduct={deleteProduct}
             onFinish={finishPurchase}
             onSaveProduct={saveProduct}
+            onGetEditHistory={getSharedItemEditHistory}
             onStart={startPurchase}
             activeAccount={deviceName ? { name: deviceName } : null}
             purchase={activePurchase}
