@@ -659,3 +659,107 @@
 }
 
 :root[data-theme="dark"] .app-footer { color: #819187; }
+
+
+.account-form,
+.account-list {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.account-form {
+  display: grid;
+  gap: 17px;
+  padding: 22px;
+}
+
+.account-list {
+  margin-top: 22px;
+  padding: 22px;
+}
+
+.account-list ul {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-row {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.account-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.account-select {
+  min-height: 36px;
+  flex-shrink: 0;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.account-select.active {
+  border-color: var(--green);
+  color: var(--green-dark);
+  background: var(--green-soft);
+}
+
+.active-account-note {
+  color: var(--green-dark) !important;
+  font-size: 0.82rem !important;
+}
+
+.account-required-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.product-author {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 550;
+}
+
+:root[data-theme="dark"] .account-select {
+  border-color: var(--line);
+  color: var(--ink);
+  background: #17221c;
+}
+
+:root[data-theme="dark"] .account-select.active {
+  border-color: var(--green);
+  color: var(--green-dark);
+  background: var(--green-soft);
+}
+
+@media (max-width: 520px) {
+  .account-form,
+  .account-list {
+    padding: 18px;
+    border-radius: 15px;
+  }
+
+  .account-row {
+    align-items: flex-start;
+  }
+}
