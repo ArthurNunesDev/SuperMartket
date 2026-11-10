@@ -14,11 +14,13 @@ function offlineAppShell() {
         BASE_PATH,
         `${BASE_PATH}manifest.webmanifest`,
         `${BASE_PATH}icons/basket.svg`,
+        `${BASE_PATH}icons/icon-192.png`,
+        `${BASE_PATH}icons/icon-512.png`,
         ...assets,
       ];
 
       const serviceWorker = `
-const CACHE_NAME = "supermartket-shell-v2";
+const CACHE_NAME = "supermartket-shell-v3";
 const APP_BASE = ${JSON.stringify(BASE_PATH)};
 const PRECACHE_URLS = ${JSON.stringify(precacheUrls)};
 
