@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function AccessPage({ step, onSubmitPin, onSubmitName, onBack, error, busy }) {
+export default function AccessPage({ step, onSubmitPin, onSubmitName, error, busy }) {
   const [pin, setPin] = useState("");
   const [name, setName] = useState("");
 
@@ -61,11 +61,6 @@ export default function AccessPage({ step, onSubmitPin, onSubmitName, onBack, er
         <button className="primary-button form-submit" disabled={busy} type="submit">
           {busy ? "Aguarde..." : step === "pin" ? "Validar acesso" : "Continuar"}
         </button>
-        {step === "name" && (
-          <button className="text-button access-back" disabled={busy} onClick={onBack} type="button">
-            ← Voltar para a lista
-          </button>
-        )}
       </form>
     </main>
   );
