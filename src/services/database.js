@@ -52,6 +52,7 @@ function openDatabase() {
       };
 
       request.onblocked = () => {
+        databasePromise = undefined;
         reject(new Error("Feche outras abas do SuperMartket para atualizar o armazenamento."));
       };
     });
@@ -72,8 +73,9 @@ export async function savePurchase(purchase) {
 export async function getPurchases() {
   const database = await openDatabase();
   const transaction = database.transaction(PURCHASES_STORE, "readonly");
+  const completed = transactionResult(transaction);
   const request = transaction.objectStore(PURCHASES_STORE).getAll();
-  const [purchases] = await Promise.all([requestResult(request), transactionResult(transaction)]);
+  const [purchases] = await Promise.all([requestResult(request), completed]);
   return purchases;
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getActivePurchase, getCompletedPurchases, savePurchase } from "./services/database.js";
 import ShoppingPage from "./pages/ShoppingPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
@@ -18,11 +18,6 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("shopping");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const refreshHistory = useCallback(async () => {
-    const purchases = await getCompletedPurchases();
-    setCompletedPurchases(purchases);
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -65,7 +60,7 @@ export default function App() {
   }
 
   async function saveProduct(productData) {
-    if (!activePurchase) return;
+    if (!activePurchase) throw new Error("Não existe uma compra em andamento.");
 
     const exists = activePurchase.items.some((item) => item.id === productData.id);
     const item = {
@@ -113,7 +108,10 @@ export default function App() {
     try {
       await savePurchase(completedPurchase);
       setActivePurchase(null);
-      await refreshHistory();
+      setCompletedPurchases((current) => [
+        completedPurchase,
+        ...current.filter((purchase) => purchase.id !== completedPurchase.id),
+      ]);
       setCurrentPage("history");
       setError("");
     } catch {
