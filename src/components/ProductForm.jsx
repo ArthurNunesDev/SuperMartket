@@ -4,7 +4,7 @@ import { parseCurrency } from "../utils/currency.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
 
-export default function ProductForm({ product, onSave, onCancel, activeAccount, busy }) {
+export default function ProductForm({ product, onSave, onCancel, activeAccount, busy, disabled = false }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
@@ -63,28 +63,28 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount, 
           <span className="eyebrow">{product ? "EDIÇÃO" : "NOVO ITEM"}</span>
           <h2>{product ? "Editar produto" : "Adicionar produto"}</h2>
         </div>
-        {product && <button className="text-button" disabled={busy} type="button" onClick={onCancel}>Cancelar</button>}
+        {product && <button className="text-button" disabled={busy || disabled || !activeAccount?.name} type="button" onClick={onCancel}>Cancelar</button>}
       </div>
 
       <label className="field field-full">
         <span>Nome do produto</span>
-        <input autoComplete="off" maxLength={80} name="name" onChange={updateField} placeholder="Ex.: Arroz" required value={form.name} />
+        <input autoComplete="off" disabled={disabled || !activeAccount?.name} maxLength={80} name="name" onChange={updateField} placeholder="Ex.: Arroz" required value={form.name} />
       </label>
       <label className="field field-full">
         <span>Quantidade</span>
-        <input inputMode="decimal" name="quantity" onChange={updateField} placeholder="1" required value={form.quantity} />
+        <input disabled={disabled || !activeAccount?.name} inputMode="decimal" name="quantity" onChange={updateField} placeholder="1" required value={form.quantity} />
       </label>
       <label className="field field-full">
         <span>Valor por unidade</span>
         <div className="input-with-prefix">
           <span>R$</span>
-          <input inputMode="decimal" name="unitPrice" onChange={updateField} placeholder="0,00" required value={form.unitPrice} />
+          <input disabled={disabled || !activeAccount?.name} inputMode="decimal" name="unitPrice" onChange={updateField} placeholder="0,00" required value={form.unitPrice} />
         </div>
       </label>
 
       {!activeAccount && !product && <p className="account-required-note">Informe seu nome antes de adicionar produtos.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="primary-button form-submit" disabled={busy || (!activeAccount && !product)} type="submit">
+      <button className="primary-button form-submit" disabled={busy || disabled || !activeAccount?.name} type="submit">
         {busy ? "Salvando..." : product ? "Salvar alterações" : "Adicionar à compra"}
       </button>
     </form>
