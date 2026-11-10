@@ -139,7 +139,9 @@ export default function App() {
       await authorizeWithFamilyPin(pin);
       setAuthorized(true);
       await refreshPurchases();
-      setAccessStep("name");
+      const storedName = getStoredDeviceName();
+      setDeviceName(storedName);
+      setAccessStep(storedName ? "ready" : "name");
       setError("");
       realtimeCleanupRef.current?.();
       realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
