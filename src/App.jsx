@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import InstallPrompt from "./components/InstallPrompt.jsx";
 import ShoppingPage from "./pages/ShoppingPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
@@ -328,6 +329,8 @@ export default function App() {
           )}
         </div>
       </header>
+
+      <InstallPrompt />
 
       {error && <div className="app-error" role="alert">{error}</div>}
 
