@@ -34,8 +34,12 @@ export default function ProductForm({ product, onSave, onCancel, activeAccount, 
     const unitPriceCents = parseCurrency(form.unitPrice);
 
     if (!name) return setError("Informe o nome do produto.");
-    if (quantityMilli === null) return setError("Informe uma quantidade maior que zero, com até três casas decimais.");
-    if (unitPriceCents === null) return setError("Informe um preço válido. Exemplo: 12,90.");
+    if (quantityMilli === null || quantityMilli > 2147483647) {
+      return setError("Informe uma quantidade válida, de até 2.147.483,647.");
+    }
+    if (unitPriceCents === null || unitPriceCents > 2147483647) {
+      return setError("Informe um preço válido de até R$ 21.474.836,47.");
+    }
 
     try {
       await onSave({
