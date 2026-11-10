@@ -1,5 +1,9 @@
 # SuperMartket
 
+## Acessar aplicação
+
+[**Abrir SuperMartket no GitHub Pages**](https://arthurnunesdev.github.io/SuperMartket/)
+
 Aplicativo mobile-first para registrar produtos durante as compras de supermercado e acompanhar o valor estimado em tempo real.
 
 ## Escopo atual
