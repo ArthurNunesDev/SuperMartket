@@ -2,7 +2,7 @@ import React from "react";
 import { calculateItemSubtotal, formatQuantity } from "../utils/calculations.js";
 import { formatCurrency } from "../utils/currency.js";
 
-export default function ProductList({ items, onEdit, onDelete }) {
+export default function ProductList({ items, onEdit, onDelete, disabled = false }) {
   if (items.length === 0) {
     return (
       <div className="empty-state">
@@ -36,8 +36,8 @@ export default function ProductList({ items, onEdit, onDelete }) {
             <div className="product-end">
               <strong>{formatCurrency(calculateItemSubtotal(item.quantityMilli, item.unitPriceCents))}</strong>
               <div className="product-actions">
-                <button aria-label={`Editar ${item.name}`} className="icon-button" onClick={() => onEdit(item)} type="button">✎</button>
-                <button aria-label={`Excluir ${item.name}`} className="icon-button danger-action" onClick={() => onDelete(item.id)} type="button">×</button>
+                <button aria-label={`Editar ${item.name}`} className="icon-button" disabled={disabled} onClick={() => onEdit(item)} type="button">✎</button>
+                <button aria-label={`Excluir ${item.name}`} className="icon-button danger-action" disabled={disabled} onClick={() => onDelete(item.id)} type="button">×</button>
               </div>
             </div>
           </li>
