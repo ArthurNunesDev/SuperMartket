@@ -9,20 +9,21 @@ function formatDate(dateValue) {
   }).format(new Date(dateValue));
 }
 
-export default function HistoryPage({ purchases }) {
+export default function HistoryPage({ purchases, onBack }) {
   return (
     <main className="page-content">
+      <button className="back-button" onClick={onBack} type="button">← Voltar para a lista</button>
       <div className="page-intro">
-        <span className="eyebrow">SEU REGISTRO</span>
+        <span className="eyebrow">REGISTRO COMPARTILHADO</span>
         <h1>Compras anteriores</h1>
-        <p>Consulte os valores das compras que você já finalizou.</p>
+        <p>Consulte o histórico de compras finalizadas pela família.</p>
       </div>
 
       {purchases.length === 0 ? (
         <div className="empty-state history-empty">
           <div className="empty-icon" aria-hidden="true">📋</div>
           <h3>Nenhuma compra finalizada</h3>
-          <p>Quando você finalizar uma compra, ela aparecerá aqui.</p>
+          <p>Quando uma compra for finalizada, ela aparecerá aqui para todos.</p>
         </div>
       ) : (
         <ul className="history-list">

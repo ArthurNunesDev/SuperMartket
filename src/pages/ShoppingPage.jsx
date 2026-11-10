@@ -3,7 +3,7 @@ import ProductForm from "../components/ProductForm.jsx";
 import ProductList from "../components/ProductList.jsx";
 import ShoppingSummary from "../components/ShoppingSummary.jsx";
 
-export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, activeAccount }) {
+export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, activeAccount, busy }) {
   const [editingProduct, setEditingProduct] = useState(null);
 
   if (!purchase) {
@@ -12,8 +12,8 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         <div className="empty-purchase">
           <div className="empty-icon" aria-hidden="true">🧺</div>
           <h1>Nenhuma compra em andamento</h1>
-          <p>Comece uma nova lista para registrar os produtos e acompanhar o total.</p>
-          <button className="primary-button" onClick={onStart} type="button">Iniciar compra</button>
+          <p>Comece uma nova lista compartilhada para registrar os produtos e acompanhar o total.</p>
+          <button className="primary-button" disabled={busy} onClick={onStart} type="button">Iniciar compra</button>
         </div>
       </main>
     );
@@ -39,15 +39,11 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         onSave={saveProduct}
         product={editingProduct}
         activeAccount={activeAccount}
+        busy={busy}
       />
 
-      <ProductList
-        items={purchase.items}
-        onDelete={onDeleteProduct}
-        onEdit={setEditingProduct}
-      />
-
-      <ShoppingSummary items={purchase.items} onFinish={onFinish} />
+      <ProductList items={purchase.items} onDelete={onDeleteProduct} onEdit={setEditingProduct} />
+      <ShoppingSummary items={purchase.items} onFinish={onFinish} busy={busy} />
     </main>
   );
 }

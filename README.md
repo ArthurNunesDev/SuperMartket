@@ -4,35 +4,54 @@
 
 [**Abrir SuperMartket no GitHub Pages**](https://arthurnunesdev.github.io/SuperMartket/)
 
-Aplicativo mobile-first para registrar produtos durante as compras de supermercado e acompanhar o valor estimado em tempo real.
+Aplicativo mobile-first para organizar compras de supermercado em uma lista compartilhada entre os dispositivos da família.
 
-## Escopo atual
+## Funcionalidades
 
-- Criar uma compra e registrar produtos.
-- Informar nome, quantidade e preço por unidade.
-- Calcular subtotais e total automaticamente.
-- Cadastrar nomes da família e selecionar a conta ativa.
-- Identificar quem adicionou cada produto à lista.
-- Editar e remover produtos.
-- Finalizar compras e consultar o histórico.
-- Manter compras no IndexedDB e contas no armazenamento local do navegador.
-- Instalar como PWA e disponibilizar o app shell para uso offline após o primeiro carregamento completo.
+- Acesso protegido por PIN familiar de seis dígitos.
+- Identificação pelo nome, salva no próprio dispositivo.
+- Lista de compras compartilhada em tempo real.
+- Registro de quem adicionou cada produto.
+- Cadastro, edição e exclusão de produtos.
+- Cálculo automático de subtotais e total.
+- Finalização de compras e histórico compartilhado.
+- Tema claro e escuro.
+- PWA com app shell disponível offline após o carregamento inicial.
 
-## Tecnologias
+## Arquitetura
 
-- React
-- Vite
-- JavaScript
-- CSS
-- IndexedDB
-- Progressive Web App (PWA)
+- React e Vite no frontend.
+- GitHub Pages para hospedagem do frontend.
+- Supabase Auth com sessão anônima persistente por dispositivo.
+- Supabase Edge Function para validar o PIN no servidor.
+- PostgreSQL com Row Level Security para compras e produtos.
+- Supabase Realtime para sincronização entre dispositivos.
 
-## Requisitos
+O PIN e a chave de rate limit ficam nos secrets da Edge Function. A chave publishable do Supabase usada pelo frontend não concede acesso aos dados sem uma sessão autorizada e as políticas RLS.
 
-- Node.js 20.19+ ou 22.12+.
-- npm.
+## Configuração inicial do Supabase
+
+1. Em **Authentication → Sign In / Providers**, habilite o provedor de acesso anônimo.
+2. Em **Edge Functions → Secrets**, configure:
+   - `FAMILY_PIN`: PIN familiar de exatamente seis dígitos.
+   - `FAMILY_RATE_LIMIT_SECRET`: segredo aleatório com pelo menos 32 caracteres.
+3. Não configure `service_role` no frontend, no GitHub Pages ou em variáveis `VITE_*`. As variáveis padrão do Supabase são injetadas no ambiente da Edge Function.
+4. A função `family-access` deve permanecer com verificação JWT habilitada.
+
+Para gerar um segredo aleatório no PowerShell:
+
+```powershell
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$bytes = New-Object byte[] 32
+$rng.GetBytes($bytes)
+[BitConverter]::ToString($bytes).Replace("-", "").ToLower()
+```
+
+A lista compartilhada começa vazia. Dados que já existam no IndexedDB e no armazenamento local dos navegadores não são importados, apagados nem modificados por esta integração.
 
 ## Executar localmente
+
+Requisitos: Node.js 20.19+ ou 22.12+ e npm.
 
 ```bash
 npm install
@@ -47,8 +66,6 @@ npm run build
 npm run preview
 ```
 
-## Armazenamento
+## Publicação
 
-As compras ficam no IndexedDB do navegador e não são enviadas para um servidor. Os dados pertencem ao navegador e ao dispositivo utilizados. Limpar os dados do navegador ou perder o dispositivo pode apagar as compras.
-
-O MVP não possui sincronização entre dispositivos nem backup em nuvem.
+O workflow de GitHub Actions publica o build no GitHub Pages quando alterações chegam à branch `main`.

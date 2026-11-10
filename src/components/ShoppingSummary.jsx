@@ -2,7 +2,7 @@ import React from "react";
 import { calculatePurchaseTotal } from "../utils/calculations.js";
 import { formatCurrency } from "../utils/currency.js";
 
-export default function ShoppingSummary({ items, onFinish }) {
+export default function ShoppingSummary({ items, onFinish, busy }) {
   const total = calculatePurchaseTotal(items);
 
   return (
@@ -12,8 +12,8 @@ export default function ShoppingSummary({ items, onFinish }) {
         <strong>{formatCurrency(total)}</strong>
         <small>{items.length} {items.length === 1 ? "produto registrado" : "produtos registrados"}</small>
       </div>
-      <button className="finish-button" disabled={items.length === 0} onClick={onFinish} type="button">
-        Finalizar compra
+      <button className="finish-button" disabled={items.length === 0 || busy} onClick={onFinish} type="button">
+        {busy ? "Aguarde..." : "Finalizar compra"}
       </button>
     </section>
   );
