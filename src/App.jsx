@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { getActivePurchase, getCompletedPurchases, savePurchase } from "./services/database.js";
 import ShoppingPage from "./pages/ShoppingPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
+import { addAccount, getAccountsState, selectAccount } from "./services/accounts.js";
 
 const THEME_STORAGE_KEY = "supermartket-theme";
 
@@ -28,6 +30,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("shopping");
   const [theme, setTheme] = useState(getInitialTheme);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountsState, setAccountsState] = useState(getAccountsState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -99,14 +102,27 @@ export default function App() {
   async function saveProduct(productData) {
     if (!activePurchase) throw new Error("Não existe uma compra em andamento.");
 
-    const exists = activePurchase.items.some((item) => item.id === productData.id);
+    const existingItem = activePurchase.items.find((item) => item.id === productData.id);
+    if (!existingItem && !activeAccount) {
+      throw new Error("Selecione uma conta antes de adicionar produtos.");
+    }
+
     const item = {
       ...productData,
       id: productData.id ?? crypto.randomUUID(),
+      ...(existingItem
+        ? {
+            addedByAccountId: existingItem.addedByAccountId,
+            addedByName: existingItem.addedByName,
+          }
+        : {
+            addedByAccountId: activeAccount.id,
+            addedByName: activeAccount.name,
+          }),
     };
     const updatedPurchase = {
       ...activePurchase,
-      items: exists
+      items: existingItem
         ? activePurchase.items.map((current) => current.id === item.id ? item : current)
         : [...activePurchase.items, item],
     };
@@ -114,6 +130,22 @@ export default function App() {
     await savePurchase(updatedPurchase);
     setActivePurchase(updatedPurchase);
     setError("");
+  }
+
+  async function handleAddAccount(name) {
+    const updatedState = addAccount(name);
+    setAccountsState(updatedState);
+    setCurrentPage("shopping");
+    setMenuOpen(false);
+  }
+
+  function handleSelectAccount(accountId) {
+    try {
+      setAccountsState(selectAccount(accountId));
+      setError("");
+    } catch (accountError) {
+      setError(accountError instanceof Error ? accountError.message : "Não foi possível selecionar a conta.");
+    }
   }
 
   async function deleteProduct(productId) {
@@ -156,6 +188,8 @@ export default function App() {
     }
   }
 
+  const activeAccount = accountsState.accounts.find((account) => account.id === accountsState.activeAccountId) ?? null;
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -194,6 +228,17 @@ export default function App() {
             {menuOpen && (
               <nav aria-label="Menu principal" className="dropdown-menu" id="main-menu">
                 <button
+                  aria-current={currentPage === "account" ? "page" : undefined}
+                  className={currentPage === "account" ? "dropdown-item active" : "dropdown-item"}
+                  onClick={() => {
+                    setCurrentPage("account");
+                    setMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Conta{activeAccount ? ` · ${activeAccount.name}` : ""}
+                </button>
+                <button
                   aria-current={currentPage === "history" ? "page" : undefined}
                   className={currentPage === "history" ? "dropdown-item active" : "dropdown-item"}
                   onClick={() => {
@@ -216,12 +261,15 @@ export default function App() {
         <main className="loading-state" aria-live="polite">Carregando suas compras...</main>
       ) : currentPage === "history" ? (
         <HistoryPage purchases={completedPurchases} />
+      ) : currentPage === "account" ? (
+        <AccountPage accounts={accountsState.accounts} activeAccountId={accountsState.activeAccountId} onAddAccount={handleAddAccount} onSelectAccount={handleSelectAccount} />
       ) : (
         <ShoppingPage
           onDeleteProduct={deleteProduct}
           onFinish={finishPurchase}
           onSaveProduct={saveProduct}
           onStart={startPurchase}
+          activeAccount={activeAccount}
           purchase={activePurchase}
         />
       )}
