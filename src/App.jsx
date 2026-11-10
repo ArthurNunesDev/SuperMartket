@@ -4,7 +4,7 @@ import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
 import {
   authorizeWithFamilyPin,
-  checkDeviceAuthorization,
+  lockDeviceAccess,
   completeSharedPurchase,
   createSharedPurchase,
   deleteSharedItem,
@@ -85,32 +85,15 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true;
-    let unsubscribe = null;
-
     async function initialize() {
       try {
         await ensureDeviceSession();
-        const isAuthorized = await checkDeviceAuthorization();
+        await lockDeviceAccess();
         if (!mounted) return;
-        setAuthorized(isAuthorized);
 
-        if (!isAuthorized) {
-          setAccessStep("pin");
-          return;
-        }
-
-        await refreshPurchases();
-        if (!mounted) return;
-        const storedName = getStoredDeviceName();
-        setDeviceName(storedName);
-        setAccessStep(storedName ? "ready" : "name");
-        unsubscribe = subscribeToSharedPurchases(() => {
-          refreshPurchases().catch(() => {
-            if (mounted) setError("Não foi possível atualizar a lista compartilhada.");
-          });
-        }, (subscriptionError) => {
-          if (mounted) setError(subscriptionError.message);
-        });
+        setAuthorized(false);
+        setAccessError("");
+        setAccessStep("pin");
       } catch (initializationError) {
         if (mounted) {
           setError(initializationError instanceof Error
@@ -126,7 +109,6 @@ export default function App() {
     initialize();
     return () => {
       mounted = false;
-      unsubscribe?.();
       realtimeCleanupRef.current?.();
       realtimeCleanupRef.current = null;
     };

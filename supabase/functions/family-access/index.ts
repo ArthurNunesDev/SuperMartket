@@ -65,18 +65,22 @@ Deno.serve(async (request: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const userId = authData.user.id;
-  const { data: alreadyAuthorized, error: authorizationError } = await admin.rpc(
-    "family_device_is_authorized", { p_user_id: userId },
-  );
-  if (authorizationError) return jsonResponse({ error: "Could not verify device authorization." }, 500);
-  if (alreadyAuthorized === true) return jsonResponse({ authorized: true, alreadyAuthorized: true });
 
-  let payload: { pin?: unknown; checkOnly?: unknown };
+  let payload: { pin?: unknown; checkOnly?: unknown; lock?: unknown };
   try {
     payload = await request.json();
   } catch {
     return jsonResponse({ error: "Invalid request body." }, 400);
   }
+
+  if (payload.lock === true) {
+    const { error: revokeError } = await admin.rpc("revoke_family_device", {
+      p_user_id: userId,
+    });
+    if (revokeError) return jsonResponse({ error: "Could not lock device access." }, 500);
+    return jsonResponse({ locked: true });
+  }
+
   if (payload.checkOnly === true) return jsonResponse({ authorized: false });
 
   const submittedPin = typeof payload.pin === "string" ? payload.pin : "";
