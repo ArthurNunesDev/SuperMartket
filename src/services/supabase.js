@@ -119,12 +119,14 @@ export async function saveSharedItem(purchaseId, item, addedByName, isUpdate = f
     name: item.name.trim(),
     quantity_milli: item.quantityMilli,
     unit_price_cents: item.unitPriceCents,
+    added_by_name: addedByName,
   };
   const query = isUpdate
     ? supabase.from("purchase_items").update({
         name: row.name,
         quantity_milli: row.quantity_milli,
         unit_price_cents: row.unit_price_cents,
+        edited_by_name: item.editedByName,
       }).eq("id", item.id)
     : supabase.from("purchase_items").insert({ ...row, id: item.id });
   const { error } = await query;
@@ -214,6 +216,7 @@ export async function saveShoppingListItem(item, addedByName) {
   }
   const { error } = await supabase.from("shopping_list_items").insert({
     ...values,
+    added_by_name: addedByName,
   });
   if (error) throw error;
 }
