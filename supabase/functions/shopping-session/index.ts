@@ -43,10 +43,10 @@ Deno.serve(async (request: Request) => {
   if (authError || !authData.user || authData.user.is_anonymous !== true) return jsonResponse({ error: "Sessão anônima inválida neste dispositivo." }, 401);
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const userId = authData.user.id;
-  let payload: { action?: unknown; pin?: unknown; confirmEnd?: unknown };
+  let payload: { action?: unknown; pin?: unknown; confirmEnd?: unknown; name?: unknown };
   try { payload = await request.json(); } catch { return jsonResponse({ error: "Requisição inválida." }, 400); }
   const action = typeof payload.action === "string" ? payload.action : "";
-  if (!["create", "join", "check", "leave"].includes(action)) return jsonResponse({ error: "Operação de sessão inválida." }, 400);
+  if (!["create", "join", "check", "leave", "set-name", "members"].includes(action)) return jsonResponse({ error: "Operação de sessão inválida." }, 400);
 
   if (action === "check") {
     const { data, error } = await admin.rpc("check_shopping_session", { p_user_id: userId });
@@ -54,6 +54,30 @@ Deno.serve(async (request: Request) => {
     const session = Array.isArray(data) ? data[0] : null;
     return jsonResponse({ authorized: Boolean(session), session: session ? { id: session.session_id, pin: session.pin, memberCount: Number(session.member_count) } : null });
   }
+  if (action === "set-name") {
+    const name = typeof payload.name === "string" ? payload.name.trim() : "";
+    if (!name || name.length > 50) return jsonResponse({ error: "Informe um nome válido, com até 50 caracteres." }, 400);
+    const { data, error } = await admin.rpc("set_shopping_session_member_name", {
+      p_user_id: userId,
+      p_display_name: name,
+    });
+    if (error) return jsonResponse({ error: errorMessage(error).includes("DEVICE_NOT_IN_SESSION")
+      ? "Este dispositivo não está em uma sessão ativa."
+      : "Não foi possível salvar seu nome na sessão." }, 409);
+    return jsonResponse({ saved: data === true });
+  }
+
+  if (action === "members") {
+    const { data, error } = await admin.rpc("list_shopping_session_members", { p_user_id: userId });
+    if (error) return jsonResponse({ error: "Não foi possível carregar os participantes da sessão." }, 500);
+    const members = Array.isArray(data) ? data.map((member) => ({
+      userId: member.user_id,
+      name: member.display_name || "Participante sem nome",
+      joinedAt: member.joined_at,
+    })) : [];
+    return jsonResponse({ members });
+  }
+
   if (action === "leave") {
     const { data, error } = await admin.rpc("leave_shopping_session", { p_user_id: userId, p_confirm_end: payload.confirmEnd === true });
     if (error) return jsonResponse({ error: errorMessage(error).includes("DEVICE_NOT_IN_SESSION") ? "Este dispositivo não está em uma sessão ativa." : "Não foi possível sair da sessão. Tente novamente." }, 409);
