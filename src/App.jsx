@@ -43,6 +43,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [accessError, setAccessError] = useState("");
   const [leaveConfirmation, setLeaveConfirmation] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const refreshCountRef = useRef(0);
   const realtimeCleanupRef = useRef(null);
 
@@ -149,6 +151,30 @@ export default function App() {
     setAccessError("");
     setAccessStep("ready");
     setCurrentPage("shopping");
+  }
+
+  function openNameEditor() {
+    setNameDraft(deviceName);
+    setEditingName(true);
+    setAccessError("");
+  }
+
+  function saveDeviceName(event) {
+    event.preventDefault();
+    const nextName = nameDraft.trim();
+    if (!nextName || nextName.length > 50) {
+      setAccessError("Informe um nome válido, com até 50 caracteres.");
+      return;
+    }
+    try {
+      localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
+    } catch {
+      setAccessError("Não foi possível salvar seu nome neste dispositivo.");
+      return;
+    }
+    setDeviceName(nextName);
+    setEditingName(false);
+    setAccessError("");
   }
 
   async function startPurchase() {
@@ -298,6 +324,7 @@ export default function App() {
               <span className="sidebar-profile-copy">
                 <strong>{deviceName}</strong>
                 <small>Participante da sessão</small>
+                <button className="sidebar-profile-edit" onClick={openNameEditor} type="button">Alterar nome</button>
               </span>
             </div>
             {session?.pin && (
@@ -362,7 +389,7 @@ export default function App() {
           : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
           : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
           : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
-          : currentPage === "planned" ? <ShoppingListPage items={plannedItems} onSave={savePlannedItem} onDelete={deletePlannedItem}
+          : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} onSave={savePlannedItem} onDelete={deletePlannedItem}
               activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
           : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
               onFinish={finishPurchase} onStart={startPurchase} onPurchasePlannedItem={purchasePlannedItem}
@@ -371,6 +398,24 @@ export default function App() {
 
         <footer className="app-footer">{authorized ? "Sessão compartilhada entre os dispositivos conectados." : "Crie uma sessão ou entre com um PIN."}</footer>
       </div>
+
+      {editingName && (
+        <div className="duplicate-backdrop" role="presentation">
+          <section aria-labelledby="change-name-title" aria-modal="true" className="duplicate-dialog" role="dialog">
+            <span className="eyebrow">IDENTIFICAÇÃO DO PARTICIPANTE</span>
+            <h2 id="change-name-title">Alterar nome</h2>
+            <p>O novo nome será usado nas próximas alterações. Os registros anteriores manterão a identificação original.</p>
+            <form className="name-change-form" onSubmit={saveDeviceName}>
+              <label className="field"><span>Seu nome</span><input autoFocus maxLength={50} onChange={(event) => setNameDraft(event.target.value)} required value={nameDraft} /></label>
+              {accessError && <p className="form-error" role="alert">{accessError}</p>}
+              <div className="duplicate-actions">
+                <button className="secondary-button" disabled={busy} onClick={() => setEditingName(false)} type="button">Cancelar</button>
+                <button className="primary-button" disabled={busy} type="submit">Salvar nome</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
 
       {leaveConfirmation && (
         <div className="session-confirm-backdrop" role="presentation">

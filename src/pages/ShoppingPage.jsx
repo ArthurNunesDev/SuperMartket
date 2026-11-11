@@ -41,6 +41,7 @@ export default function ShoppingPage({ purchase, plannedItems, onSaveProduct, on
         onSave={saveProduct}
         onGetEditHistory={onGetEditHistory}
         onHistoryLoadingChange={onHistoryLoadingChange}
+        existingItems={purchase.items}
         product={editingProduct}
         activeAccount={activeAccount}
         disabled={identityRequired}
