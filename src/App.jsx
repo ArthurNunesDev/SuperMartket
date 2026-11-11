@@ -296,7 +296,7 @@ export default function App() {
     };
     setBusy(true);
     try {
-      await saveSharedItem(activePurchase.id, item, item.addedByName, Boolean(productData.id));
+      await saveSharedItem(activePurchase.id, item, Boolean(productData.id));
       await refreshPurchases();
       setError("");
     } finally { setBusy(false); }
@@ -327,7 +327,7 @@ export default function App() {
   async function savePlannedItem(item) {
     if (!authorized || !deviceName || accessStep !== "ready") throw new Error("Informe seu nome antes de utilizar a lista.");
     setBusy(true);
-    try { await saveShoppingListItem(item, deviceName); await refreshPurchases(); }
+    try { await saveShoppingListItem(item); await refreshPurchases(); }
     finally { setBusy(false); }
   }
 
@@ -344,7 +344,7 @@ export default function App() {
     if (!deviceName || !authorized) return;
     setBusy(true);
     try {
-      await purchasePlannedShoppingItem(itemId, activePurchase.id, priceCents, deviceName);
+      await purchasePlannedShoppingItem(itemId, activePurchase.id, priceCents);
       await refreshPurchases();
       setError("");
     } catch (purchaseError) {
