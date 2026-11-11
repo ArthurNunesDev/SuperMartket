@@ -11,10 +11,13 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 function generatePin(): string {
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  const pin = Array.from(bytes, (byte) => PIN_ALPHABET[byte % PIN_ALPHABET.length]).join("");
-  return /[A-Z]/.test(pin) && /[0-9]/.test(pin) ? pin : generatePin();
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const pin = Array.from(bytes, (byte) => PIN_ALPHABET[byte % PIN_ALPHABET.length]).join("");
+    if (/[A-Z]/.test(pin) && /[0-9]/.test(pin)) return pin;
+  }
+  throw new Error("Could not generate a valid session PIN.");
 }
 async function hmacFingerprint(secret: string, value: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -58,10 +61,8 @@ Deno.serve(async (request: Request) => {
   }
   if (action === "create") {
     for (let attempt = 0; attempt < 8; attempt += 1) {
-      const bytes = new Uint8Array(8);
-      crypto.getRandomValues(bytes);
-      const pin = Array.from(bytes, (byte) => PIN_ALPHABET[byte % PIN_ALPHABET.length]).join("");
-      if (!/[A-Z]/.test(pin) || !/[0-9]/.test(pin)) { attempt -= 1; continue; }
+      let pin: string;
+      try { pin = generatePin(); } catch { return jsonResponse({ error: "Não foi possível gerar um PIN. Tente novamente." }, 503); }
       const { data, error } = await admin.rpc("create_shopping_session", { p_user_id: userId, p_pin: pin });
       if (!error) return jsonResponse({ authorized: true, created: true, session: { id: data, pin, memberCount: 1 } });
       const message = errorMessage(error);
@@ -75,11 +76,11 @@ Deno.serve(async (request: Request) => {
   const pin = typeof payload.pin === "string" ? payload.pin.trim().toUpperCase() : "";
   if (!/^[A-Z0-9]{8}$/.test(pin) || !/[A-Z]/.test(pin) || !/[0-9]/.test(pin)) return jsonResponse({ error: "Informe um PIN válido de 8 letras e números." }, 400);
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = request.headers.get("cf-connecting-ip") ?? forwarded ?? "unknown";
+  const ip = request.headers.get("cf-connecting-ip")?.trim() || forwarded || "unknown";
   const deviceFingerprint = await hmacFingerprint(serviceKey, "device:" + userId);
   const ipFingerprint = await hmacFingerprint(serviceKey, ip === "unknown" ? "fallback:" + userId : "ip:" + ip);
   const rateArgs = { p_device_fingerprint: deviceFingerprint, p_ip_fingerprint: ipFingerprint };
-  const { data: allowed, error: rateError } = await admin.rpc("check_shopping_session_pin_attempt", { ...rateArgs, p_failed: false });
+  const { data: allowed, error: rateError } = await admin.rpc("check_shopping_session_pin_attempt", { ...rateArgs, p_failed: true });
   if (rateError) return jsonResponse({ error: "Não foi possível validar a tentativa." }, 500);
   if (allowed !== true) return jsonResponse({ error: "Muitas tentativas. Aguarde 15 minutos." }, 429);
   const { data, error } = await admin.rpc("join_shopping_session", { p_user_id: userId, p_pin: pin });
@@ -87,9 +88,6 @@ Deno.serve(async (request: Request) => {
     const message = errorMessage(error);
     if (message.includes("DEVICE_ALREADY_IN_SESSION")) return jsonResponse({ error: "Este dispositivo já participa de uma sessão." }, 409);
     if (message.includes("SESSION_NOT_FOUND")) {
-      const { data: recorded, error: recordError } = await admin.rpc("check_shopping_session_pin_attempt", { ...rateArgs, p_failed: true });
-      if (recordError) return jsonResponse({ error: "Não foi possível registrar a tentativa." }, 500);
-      if (recorded !== true) return jsonResponse({ error: "Muitas tentativas. Aguarde 15 minutos." }, 429);
       return jsonResponse({ error: "PIN não encontrado ou sessão encerrada." }, 404);
     }
     return jsonResponse({ error: "Não foi possível entrar na sessão." }, 500);
