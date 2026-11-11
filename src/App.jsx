@@ -27,6 +27,13 @@ function getStoredDeviceName() {
     return typeof name === "string" && name.trim() ? name.trim() : "";
   } catch { return ""; }
 }
+function isDuplicateMemberName(error) {
+  return error?.code === "DUPLICATE_MEMBER_NAME";
+}
+function clearStoredDeviceName() {
+  try { localStorage.removeItem(DEVICE_NAME_STORAGE_KEY); } catch { /* The access form remains authoritative. */ }
+}
+const DUPLICATE_NAME_MESSAGE = "Esse nome já está sendo usado por outra pessoa nesta sessão. Escolha outro nome para continuar.";
 
 export default function App() {
   const [activePurchase, setActivePurchase] = useState(null);
@@ -132,6 +139,13 @@ export default function App() {
       if (storedName) await startSessionActivity(nextSession, storedName);
       setAccessStep(storedName ? "ready" : "name");
     } catch (activationError) {
+      if (isDuplicateMemberName(activationError)) {
+        clearStoredDeviceName();
+        setDeviceName("");
+        setAccessError(DUPLICATE_NAME_MESSAGE);
+        setAccessStep("name");
+        return;
+      }
       setAccessStep("error");
       throw activationError;
     }
@@ -166,7 +180,12 @@ export default function App() {
         if (!mounted) return;
         if (storedName) await startSessionActivity(existingSession, storedName);
       } catch (initializationError) {
-        if (mounted) {
+        if (mounted && isDuplicateMemberName(initializationError)) {
+          clearStoredDeviceName();
+          setDeviceName("");
+          setAccessError(DUPLICATE_NAME_MESSAGE);
+          setAccessStep("name");
+        } else if (mounted) {
           setError(initializationError instanceof Error ? initializationError.message : "Não foi possível conectar ao serviço.");
           setAccessStep("error");
         }
@@ -208,8 +227,8 @@ export default function App() {
     }
     setBusy(true);
     try {
-      localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
       if (session) await startSessionActivity(session, nextName);
+      localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
       setDeviceName(nextName);
       setAccessError("");
       setAccessStep("ready");

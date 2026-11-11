@@ -61,9 +61,18 @@ Deno.serve(async (request: Request) => {
       p_user_id: userId,
       p_display_name: name,
     });
-    if (error) return jsonResponse({ error: errorMessage(error).includes("DEVICE_NOT_IN_SESSION")
-      ? "Este dispositivo não está em uma sessão ativa."
-      : "Não foi possível salvar seu nome na sessão." }, 409);
+    if (error) {
+      const message = errorMessage(error);
+      if (message.includes("DUPLICATE_MEMBER_NAME") || (error as { code?: string }).code === "23505") {
+        return jsonResponse({
+          error: "Esse nome já está sendo usado por outra pessoa nesta sessão. Escolha outro nome.",
+          code: "DUPLICATE_MEMBER_NAME",
+        }, 409);
+      }
+      return jsonResponse({ error: message.includes("DEVICE_NOT_IN_SESSION")
+        ? "Este dispositivo não está em uma sessão ativa."
+        : "Não foi possível salvar seu nome na sessão." }, 409);
+    }
     return jsonResponse({ saved: data === true });
   }
 
