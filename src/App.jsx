@@ -127,9 +127,14 @@ export default function App() {
     const storedName = getStoredDeviceName();
     setDeviceName(storedName);
     setAccessStep("loading");
-    await refreshPurchases();
-    if (storedName) await startSessionActivity(nextSession, storedName);
-    setAccessStep(storedName ? "ready" : "name");
+    try {
+      await refreshPurchases();
+      if (storedName) await startSessionActivity(nextSession, storedName);
+      setAccessStep(storedName ? "ready" : "name");
+    } catch (activationError) {
+      setAccessStep("error");
+      throw activationError;
+    }
   }, [refreshPurchases, startSessionActivity]);
 
   useEffect(() => {
