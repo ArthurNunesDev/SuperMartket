@@ -26,7 +26,6 @@ function jsonResponse(body: Record<string, unknown>, status = 200, headers: Reco
   });
 }
 
-
 async function hmacFingerprint(secret: string, value: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -97,7 +96,14 @@ Deno.serve(async (request: Request) => {
     return respond({ locked: true });
   }
 
-  if (payload.checkOnly === true) return respond({ authorized: false });
+  if (payload.checkOnly === true) {
+    const { data: authorized, error: authorizationError } = await admin.rpc(
+      "family_device_is_authorized",
+      { p_user_id: userId },
+    );
+    if (authorizationError) return respond({ error: "Could not verify device access." }, 500);
+    return respond({ authorized: authorized === true });
+  }
 
   const submittedPin = typeof payload.pin === "string" ? payload.pin : "";
   if (!/^\d{6}$/.test(submittedPin)) return respond({ error: "Informe um PIN de seis dígitos." }, 400);
