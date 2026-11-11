@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import ProductForm from "../components/ProductForm.jsx";
 import ProductList from "../components/ProductList.jsx";
 import ShoppingSummary from "../components/ShoppingSummary.jsx";
+import PlannedItemsPanel from "../components/PlannedItemsPanel.jsx";
 
-export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct, onFinish, onStart, onGetEditHistory, onHistoryLoadingChange, activeAccount, busy }) {
+export default function ShoppingPage({ purchase, plannedItems, onSaveProduct, onDeleteProduct, onFinish, onStart, onPurchasePlannedItem, onGetEditHistory, onHistoryLoadingChange, activeAccount, busy }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const identityRequired = !activeAccount?.name;
 
@@ -13,9 +14,10 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         <div className="empty-purchase">
           <div className="empty-icon" aria-hidden="true">🧺</div>
           <h1>Nenhuma compra em andamento</h1>
-          <p>Comece uma nova lista compartilhada para registrar os produtos e acompanhar o total.</p>
+          <p>Inicie uma compra para adicionar produtos e confirmar os itens da sua lista planejada.</p>
           <button className="primary-button" disabled={busy || identityRequired} onClick={onStart} type="button">Iniciar compra</button>
         </div>
+        <PlannedItemsPanel items={plannedItems} purchase={null} onPurchase={onPurchasePlannedItem} onStart={onStart} busy={busy} />
       </main>
     );
   }
@@ -33,7 +35,6 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         <p>Adicione os produtos conforme encontrar cada item.</p>
         {activeAccount && <p className="active-account-note">Adicionando como <strong>{activeAccount.name}</strong></p>}
       </div>
-
       <ProductForm
         key={editingProduct?.id ?? "new-product"}
         onCancel={() => setEditingProduct(null)}
@@ -45,8 +46,8 @@ export default function ShoppingPage({ purchase, onSaveProduct, onDeleteProduct,
         disabled={identityRequired}
         busy={busy}
       />
-
       <ProductList items={purchase.items} onDelete={onDeleteProduct} onEdit={setEditingProduct} disabled={identityRequired} />
+      <PlannedItemsPanel items={plannedItems} purchase={purchase} onPurchase={onPurchasePlannedItem} onStart={onStart} busy={busy} />
       <ShoppingSummary items={purchase.items} onFinish={onFinish} busy={busy} disabled={identityRequired} />
     </main>
   );
