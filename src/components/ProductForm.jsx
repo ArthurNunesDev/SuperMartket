@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { parseQuantity } from "../utils/calculations.js";
-import { parseCurrency } from "../utils/currency.js";
+import { parseQuantity, sanitizeQuantityInput } from "../utils/calculations.js";
+import { parseCurrency, sanitizeCurrencyInput } from "../utils/currency.js";
 import { subscribeToSharedItemEditHistory } from "../services/supabase.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
@@ -71,7 +71,12 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
 
   function updateField(event) {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const sanitizedValue = name === "quantity"
+      ? sanitizeQuantityInput(value)
+      : name === "unitPrice"
+        ? sanitizeCurrencyInput(value)
+        : value;
+    setForm((current) => ({ ...current, [name]: sanitizedValue }));
   }
 
   async function handleSubmit(event) {
@@ -119,13 +124,13 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
       </label>
       <label className="field field-full">
         <span>Quantidade</span>
-        <input disabled={disabled || !activeAccount?.name} inputMode="decimal" name="quantity" onChange={updateField} placeholder="1" required value={form.quantity} />
+        <input disabled={disabled || !activeAccount?.name} inputMode="decimal" maxLength={14} name="quantity" onChange={updateField} placeholder="1" required value={form.quantity} />
       </label>
       <label className="field field-full">
         <span>Valor por unidade</span>
         <div className="input-with-prefix">
           <span>R$</span>
-          <input disabled={disabled || !activeAccount?.name} inputMode="decimal" name="unitPrice" onChange={updateField} placeholder="0,00" required value={form.unitPrice} />
+          <input disabled={disabled || !activeAccount?.name} inputMode="decimal" maxLength={14} name="unitPrice" onChange={updateField} placeholder="0,00" required value={form.unitPrice} />
         </div>
       </label>
 
