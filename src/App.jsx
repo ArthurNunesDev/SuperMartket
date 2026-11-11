@@ -11,8 +11,7 @@ import {
   deleteSharedItem, deleteShoppingListItem, ensureDeviceSession, getSharedPurchases,
   getSharedItemEditHistory, getShoppingListItems, joinShoppingSession, leaveShoppingSession,
   purchasePlannedShoppingItem, saveSharedItem, saveShoppingListItem, signOutDevice,
-  subscribeToSharedPurchases, getSessionMembers, saveSessionMemberName, getCurrentUserId,
-  subscribeToSessionActivity,
+  getSessionMembers, saveSessionMemberName, getCurrentUserId, subscribeToSessionActivity,
 } from "./services/supabase.js";
 
 const THEME_STORAGE_KEY = "supermartket-theme";
@@ -52,7 +51,6 @@ export default function App() {
   const [presenceState, setPresenceState] = useState({});
   const [typingMembers, setTypingMembers] = useState({});
   const refreshCountRef = useRef(0);
-  const realtimeCleanupRef = useRef(null);
   const activityCleanupRef = useRef(null);
   const typingTimersRef = useRef(new Map());
 
@@ -115,9 +113,12 @@ export default function App() {
           setError("Não foi possível atualizar os participantes da sessão.");
         });
       },
+      () => {
+        refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
+      },
       (activityError) => setError(activityError.message),
     );
-  }, []);
+  }, [refreshPurchases]);
 
   const activateSession = useCallback(async (nextSession) => {
     setSession(nextSession);
@@ -129,10 +130,6 @@ export default function App() {
     await refreshPurchases();
     if (storedName) await startSessionActivity(nextSession, storedName);
     setAccessStep(storedName ? "ready" : "name");
-    realtimeCleanupRef.current?.();
-    realtimeCleanupRef.current = subscribeToSharedPurchases(nextSession.id, () => {
-      refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
-    }, (subscriptionError) => setError(subscriptionError.message));
   }, [refreshPurchases, startSessionActivity]);
 
   useEffect(() => {
@@ -163,10 +160,6 @@ export default function App() {
         await refreshPurchases();
         if (!mounted) return;
         if (storedName) await startSessionActivity(existingSession, storedName);
-        realtimeCleanupRef.current?.();
-        realtimeCleanupRef.current = subscribeToSharedPurchases(existingSession.id, () => {
-          refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
-        }, (subscriptionError) => setError(subscriptionError.message));
       } catch (initializationError) {
         if (mounted) {
           setError(initializationError instanceof Error ? initializationError.message : "Não foi possível conectar ao serviço.");
@@ -179,8 +172,6 @@ export default function App() {
     initialize();
     return () => {
       mounted = false;
-      realtimeCleanupRef.current?.();
-      realtimeCleanupRef.current = null;
       activityCleanupRef.current?.();
       activityCleanupRef.current = null;
       typingTimersRef.current.forEach((timer) => clearTimeout(timer));
@@ -339,8 +330,6 @@ export default function App() {
       const result = await leaveShoppingSession(confirmEnd);
       if (result.needsConfirmation) { setLeaveConfirmation(true); return; }
       setLeaveConfirmation(false);
-      realtimeCleanupRef.current?.();
-      realtimeCleanupRef.current = null;
       activityCleanupRef.current?.();
       activityCleanupRef.current = null;
       setSessionMembers([]);

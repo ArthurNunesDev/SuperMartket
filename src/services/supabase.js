@@ -234,21 +234,6 @@ export async function purchasePlannedShoppingItem(itemId, purchaseId, priceCents
   return data;
 }
 
-export function subscribeToSharedPurchases(sessionId, onChange, onError) {
-  const channel = supabase
-    .channel(`session:${sessionId}`, { config: { private: true } })
-    .on("postgres_changes", { event: "*", schema: "public", table: "purchases" }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "purchase_items" }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "shopping_list_items" }, onChange)
-    .subscribe((status) => {
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        onError?.(new Error("A conexão em tempo real foi interrompida."));
-      }
-    });
-  return () => { supabase.removeChannel(channel); };
-}
-
-
 export async function saveSessionMemberName(name) {
   const normalizedName = typeof name === "string" ? name.trim() : "";
   if (!normalizedName || normalizedName.length > 50) {
@@ -271,7 +256,7 @@ export async function getCurrentUserId() {
   return data.user.id;
 }
 
-export function subscribeToSessionActivity(sessionId, userId, name, onPresence, onTyping, onRosterChange, onError) {
+export function subscribeToSessionActivity(sessionId, userId, name, onPresence, onTyping, onRosterChange, onChange, onError) {
   let active = true;
   let currentStatus = document.visibilityState === "visible" ? "online" : "inactive";
   let lastActivityAt = Date.now();
@@ -380,6 +365,9 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   document.addEventListener("touchstart", handleInteraction, { passive: true });
 
   channel
+    .on("postgres_changes", { event: "*", schema: "public", table: "purchases" }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "purchase_items" }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "shopping_list_items" }, onChange)
     .on("presence", { event: "sync" }, () => {
       if (active) onPresence?.(channel.presenceState());
       onRosterChange?.();
