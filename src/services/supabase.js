@@ -22,21 +22,18 @@ async function invokeShoppingSession(body) {
   const { data, error } = await supabase.functions.invoke("shopping-session", { body });
   if (error) {
     let message = "Não foi possível processar a sessão.";
+    let code = "";
     try {
       const response = error.context;
       const payload = response instanceof Response ? await response.clone().json() : null;
       if (payload?.error) message = payload.error;
-      if (payload?.code) {
-        const sessionError = new Error(message);
-        sessionError.status = error.context?.status;
-        sessionError.code = payload.code;
-        throw sessionError;
-      }
+      if (typeof payload?.code === "string") code = payload.code;
     } catch {
       // Keep a safe generic error if the response cannot be parsed.
     }
     const sessionError = new Error(message);
     sessionError.status = error.context?.status;
+    if (code) sessionError.code = code;
     throw sessionError;
   }
   return data;
