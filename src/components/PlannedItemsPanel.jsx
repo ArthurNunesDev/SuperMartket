@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import ItemFilters from "./ItemFilters.jsx";
 import { formatQuantity } from "../utils/calculations.js";
 import { parseCurrency, sanitizeCurrencyInput } from "../utils/currency.js";
 
-export default function PlannedItemsPanel({ items, totalItems = items.length, hasActiveFilters = false, purchase, onPurchase, onStart, busy }) {
+export default function PlannedItemsPanel({ items, totalItems = items.length, hasActiveFilters = false, query = "", onQueryChange, participant = "", onParticipantChange, participants = [], purchase, onPurchase, onStart, busy }) {
   const [prices, setPrices] = useState({});
   if (totalItems === 0) return null;
 
@@ -15,6 +16,7 @@ export default function PlannedItemsPanel({ items, totalItems = items.length, ha
         </div>
         <span className="item-count">{items.length} de {totalItems} {totalItems === 1 ? "item" : "itens"}</span>
       </div>
+      <ItemFilters query={query} onQueryChange={onQueryChange} participant={participant} onParticipantChange={onParticipantChange} participants={participants} label="Pesquisar itens planejados" />
       {items.length === 0 ? (
         <div className="filter-empty-state" role="status">
           <strong>Nenhum item planejado encontrado</strong>
