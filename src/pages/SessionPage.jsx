@@ -51,8 +51,8 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
                     {statusLabel}
                   </span>
                   {typingInfo && status !== "offline" && (
-                    <span className="session-typing" aria-label={`${typingInfo.name} está digitando`}>
-                      {typingInfo.name} está digitando{typingInfo.field ? ` em ${typingInfo.field}` : ""}
+                    <span className="session-typing" aria-label={`${member.name} está digitando`}>
+                      {member.name} está digitando{typingInfo.field ? ` em ${typingInfo.field}` : ""}
                       <i /><i /><i />
                     </span>
                   )}

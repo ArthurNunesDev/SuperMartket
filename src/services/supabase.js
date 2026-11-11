@@ -301,8 +301,9 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
 
   const sendTyping = (field) => {
     if (!active || document.visibilityState !== "visible") return;
+    const fieldChanged = field !== lastTypingField;
     lastTypingField = field;
-    if (!typing) {
+    if (!typing || fieldChanged) {
       typing = true;
       channel.send({
         type: "broadcast",
