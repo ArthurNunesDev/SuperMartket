@@ -24,3 +24,13 @@ export function formatQuantity(quantityMilli) {
     maximumFractionDigits: 3,
   });
 }
+
+export function sanitizeQuantityInput(value) {
+  const normalized = String(value).replace(/[^0-9,.]/g, "").replace(/\./g, ",");
+  const separatorIndex = normalized.indexOf(",");
+  if (separatorIndex === -1) return normalized;
+
+  const integerPart = normalized.slice(0, separatorIndex);
+  const decimalPart = normalized.slice(separatorIndex + 1).replace(/,/g, "").slice(0, 3);
+  return `${integerPart},${decimalPart}`;
+}
