@@ -113,7 +113,7 @@ export async function createSharedPurchase() {
   throw error;
 }
 
-export async function saveSharedItem(purchaseId, item, addedByName, isUpdate = false) {
+export async function saveSharedItem(purchaseId, item, isUpdate = false) {
   const row = {
     purchase_id: purchaseId,
     name: item.name.trim(),
@@ -195,7 +195,7 @@ export async function getShoppingListItems() {
   }));
 }
 
-export async function saveShoppingListItem(item, addedByName) {
+export async function saveShoppingListItem(item) {
   const values = {
     name: item.name.trim(),
     quantity_milli: item.quantityMilli,
@@ -221,12 +221,12 @@ export async function deleteShoppingListItem(itemId) {
   if (error) throw error;
 }
 
-export async function purchasePlannedShoppingItem(itemId, purchaseId, priceCents, buyerName) {
+export async function purchasePlannedShoppingItem(itemId, purchaseId, priceCents) {
   const { data, error } = await supabase.rpc("purchase_planned_shopping_item", {
     p_item_id: itemId,
     p_purchase_id: purchaseId,
     p_unit_price_cents: priceCents,
-    p_buyer_name: buyerName,
+    p_buyer_name: null,
   });
   if (error) throw error;
   return data;
