@@ -2,17 +2,26 @@ import React, { useMemo, useState } from "react";
 import { formatQuantity, parseQuantity, sanitizeQuantityInput } from "../utils/calculations.js";
 import { formatCurrency, parseCurrency, sanitizeCurrencyInput } from "../utils/currency.js";
 import { findDuplicateProduct, getFrequentProducts } from "../utils/productMatching.js";
+import { filterShoppingItems } from "../utils/itemFilters.js";
+import ItemFilters from "../components/ItemFilters.jsx";
 
 const EMPTY_FORM = { name: "", quantity: "1", price: "" };
 const MAX_QUANTITY = 2147483647;
 
-export default function ShoppingListPage({ items, purchases = [], onSave, onDelete, activeAccount, busy, onBack }) {
+export default function ShoppingListPage({ items, purchases = [], participantNames = [], onSave, onDelete, activeAccount, busy, onBack }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingItem, setEditingItem] = useState(null);
   const [error, setError] = useState("");
   const [duplicateMatch, setDuplicateMatch] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedParticipant, setSelectedParticipant] = useState("");
   const identityRequired = !activeAccount?.name;
   const frequentProducts = useMemo(() => getFrequentProducts(purchases), [purchases]);
+  const filteredItems = useMemo(
+    () => filterShoppingItems(items, searchQuery, selectedParticipant),
+    [items, searchQuery, selectedParticipant]
+  );
+  const hasActiveFilters = Boolean(searchQuery.trim() || selectedParticipant);
 
   function resetForm() {
     setForm(EMPTY_FORM);
@@ -134,10 +143,27 @@ export default function ShoppingListPage({ items, purchases = [], onSave, onDele
       </form>
 
       <section className="planned-list-section">
-        <div className="section-heading"><div><span className="eyebrow">PENDENTES</span><h2>Itens para comprar</h2></div><span className="item-count">{items.length}</span></div>
-        {items.length === 0 ? <div className="empty-state"><div className="empty-icon" aria-hidden="true">📝</div><h3>Nenhum item planejado</h3><p>Adicione os produtos que você não quer esquecer.</p></div> : (
+        <div className="section-heading"><div><span className="eyebrow">PENDENTES</span><h2>Itens para comprar</h2></div><span className="item-count">{filteredItems.length} de {items.length}</span></div>
+        {items.length > 0 && (
+          <ItemFilters
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            participant={selectedParticipant}
+            onParticipantChange={setSelectedParticipant}
+            participants={participantNames}
+            label="Pesquisar e filtrar lista de compras"
+          />
+        )}
+        {items.length === 0 ? (
+          <div className="empty-state"><div className="empty-icon" aria-hidden="true">📝</div><h3>Nenhum item planejado</h3><p>Adicione os produtos que você não quer esquecer.</p></div>
+        ) : filteredItems.length === 0 ? (
+          <div className="filter-empty-state" role="status">
+            <strong>Nenhum item encontrado</strong>
+            <span>{hasActiveFilters ? "Tente alterar a pesquisa ou o participante selecionado." : "Os itens aparecerão aqui."}</span>
+          </div>
+        ) : (
           <ul className="planned-list-items">
-            {items.map((item) => <li className="planned-list-card" key={item.id}>
+            {filteredItems.map((item) => <li className="planned-list-card" key={item.id}>
               <div><strong>{item.name}</strong><span>{formatQuantity(item.quantityMilli)} · Adicionado por {item.addedByName}</span></div>
               <div className="planned-list-meta">
                 <strong>{item.unitPriceCents == null ? "Preço não informado" : formatCurrency(item.unitPriceCents)}</strong>
