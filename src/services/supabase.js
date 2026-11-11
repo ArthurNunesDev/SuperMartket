@@ -70,6 +70,7 @@ function mapPurchase(row) {
     status: row.status,
     items: (row.items ?? []).map((item) => ({
       id: item.id,
+      plannedItemId: item.planned_item_id ?? null,
       name: item.name,
       quantityMilli: item.quantity_milli,
       unit: "un",
@@ -83,7 +84,7 @@ function mapPurchase(row) {
 export async function getSharedPurchases() {
   const { data, error } = await supabase
     .from("purchases")
-    .select("id,status,created_at,completed_at,items:purchase_items(id,name,quantity_milli,unit_price_cents,added_by_name,edited_by_name,created_at)")
+    .select("id,status,created_at,completed_at,items:purchase_items(id,planned_item_id,name,quantity_milli,unit_price_cents,added_by_name,edited_by_name,created_at)")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(mapPurchase);
