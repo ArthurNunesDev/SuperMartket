@@ -29,7 +29,7 @@ export default function PlannedItemsPanel({ items, purchase, onPurchase, onStart
                 <label className="planned-price-field">
                   <span>Preço unitário</span>
                   <div className="input-with-prefix"><span>R$</span>
-                    <input aria-label={"Preço de " + item.name} inputMode="decimal" maxLength={14} onChange={(event) => setPrices((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="0,00" value={priceText} />
+                    <input aria-label={"Preço de " + item.name} inputMode="decimal" maxLength={14} onChange={(event) => setPrices((current) => ({ ...current, [item.id]: sanitizeCurrencyInput(event.target.value) }))} placeholder="0,00" value={priceText} />
                   </div>
                 </label>
                 <button className="planned-purchase-button" disabled={busy || !purchase || priceCents === null || priceCents > 2147483647} onClick={() => onPurchase(item.id, priceCents)} type="button">
