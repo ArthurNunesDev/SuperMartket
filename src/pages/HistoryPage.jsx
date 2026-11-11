@@ -12,7 +12,7 @@ function formatDate(dateValue) {
 export default function HistoryPage({ purchases, onBack }) {
   return (
     <main className="page-content">
-      <button className="back-button" onClick={onBack} type="button">← Voltar para a lista</button>
+      <button className="back-button" onClick={onBack} type="button">← Voltar para o carrinho</button>
       <div className="page-intro">
         <span className="eyebrow">REGISTRO COMPARTILHADO</span>
         <h1>Compras anteriores</h1>

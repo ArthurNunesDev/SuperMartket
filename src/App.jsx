@@ -36,7 +36,6 @@ export default function App() {
   const [authorized, setAuthorized] = useState(false);
   const [deviceName, setDeviceName] = useState(getStoredDeviceName);
   const [theme, setTheme] = useState(getInitialTheme);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -83,13 +82,6 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#111a15" : "#f4f7f5");
     try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* Keep theme for this visit. */ }
   }, [theme]);
-
-  useEffect(() => {
-    if (!menuOpen) return undefined;
-    function closeOnEscape(event) { if (event.key === "Escape") setMenuOpen(false); }
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [menuOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -274,58 +266,112 @@ export default function App() {
   }
 
   const showLoader = loading || accessStep === "loading" || refreshing || historyLoading || busy;
+  const showNavigation = authorized && Boolean(deviceName) && accessStep === "ready";
 
   return (
-    <div className="app-shell">
+    <div className={showNavigation ? "app-shell has-sidebar" : "app-shell"}>
       <header className="app-header">
-        <a className="brand" href="/" onClick={(event) => { event.preventDefault(); setCurrentPage("shopping"); setMenuOpen(false); }}>
-          <span className="brand-mark" aria-hidden="true">S</span><span>SuperMartket</span>
+        <a className="brand" href="/" onClick={(event) => {
+          event.preventDefault();
+          setCurrentPage("shopping");
+        }}>
+          <span className="brand-mark" aria-hidden="true">S</span>
+          <span>SuperMartket</span>
         </a>
         <div className="header-actions">
-          <button aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"} className="header-icon-button theme-toggle"
-            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"} type="button">
+          <button
+            aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+            className="header-icon-button theme-toggle"
+            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+            type="button"
+          >
             <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
           </button>
-          {authorized && deviceName && accessStep === "ready" && (
-            <div className="menu-container">
-              <button aria-expanded={menuOpen} aria-controls="main-menu" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-                className="header-icon-button menu-toggle" onClick={() => setMenuOpen((open) => !open)} type="button">
-                <span className={menuOpen ? "hamburger-icon is-open" : "hamburger-icon"} aria-hidden="true"><span /><span /><span /></span>
-              </button>
-              {menuOpen && (
-                <nav aria-label="Menu principal" className="dropdown-menu" id="main-menu">
-                  <span className="dropdown-caption">Usando como {deviceName}</span>
-                  {session?.pin && <span className="dropdown-session-pin">PIN: <strong>{session.pin}</strong></span>}
-                  <button aria-current={currentPage === "shopping" ? "page" : undefined} className={currentPage === "shopping" ? "dropdown-item active" : "dropdown-item"}
-                    onClick={() => { setCurrentPage("shopping"); setMenuOpen(false); }} type="button">Carrinho</button>
-                  <button aria-current={currentPage === "planned" ? "page" : undefined} className={currentPage === "planned" ? "dropdown-item active" : "dropdown-item"}
-                    onClick={() => { setCurrentPage("planned"); setMenuOpen(false); }} type="button">Lista de Compras</button>
-                  <button aria-current={currentPage === "history" ? "page" : undefined} className={currentPage === "history" ? "dropdown-item active" : "dropdown-item"}
-                    onClick={() => { setCurrentPage("history"); setMenuOpen(false); }} type="button">Histórico</button>
-                  <button className="dropdown-item dropdown-leave" onClick={() => { setMenuOpen(false); performLeave(false); }} disabled={busy} type="button">Sair da sessão</button>
-                </nav>
-              )}
-            </div>
-          )}
         </div>
       </header>
 
-      <InstallPrompt />
-      {error && <div className="app-error" role="alert">{error}</div>}
+      {showNavigation && (
+        <aside aria-label="Navegação da sessão" className="app-sidebar">
+          <div className="sidebar-top">
+            <div className="sidebar-profile">
+              <span className="sidebar-avatar" aria-hidden="true">{deviceName.trim().charAt(0).toUpperCase()}</span>
+              <span className="sidebar-profile-copy">
+                <strong>{deviceName}</strong>
+                <small>Participante da sessão</small>
+              </span>
+            </div>
+            {session?.pin && (
+              <div className="sidebar-session">
+                <span>PIN DA SESSÃO</span>
+                <strong>{session.pin}</strong>
+              </div>
+            )}
+          </div>
 
-      {loading || accessStep === "loading" ? <main className="loading-state" aria-live="polite">Conectando à sessão...</main>
-        : accessStep === "error" ? <main className="page-content"><div className="empty-state"><h3>Não foi possível conectar</h3><p>Verifique a conexão e recarregue a página.</p></div></main>
-        : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
-        : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
-        : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
-        : currentPage === "planned" ? <ShoppingListPage items={plannedItems} onSave={savePlannedItem} onDelete={deletePlannedItem}
-            activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
-        : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
-            onFinish={finishPurchase} onStart={startPurchase} onPurchasePlannedItem={purchasePlannedItem}
-            onGetEditHistory={getSharedItemEditHistory} onHistoryLoadingChange={handleHistoryLoadingChange}
-            activeAccount={{ name: deviceName }} busy={busy} />}
+          <nav aria-label="Menu principal" className="sidebar-navigation">
+            <span className="sidebar-section-title">MENU PRINCIPAL</span>
+            <button
+              aria-current={currentPage === "shopping" ? "page" : undefined}
+              className={currentPage === "shopping" ? "sidebar-item active" : "sidebar-item"}
+              onClick={() => setCurrentPage("shopping")}
+              type="button"
+            >
+              <span aria-hidden="true">🛒</span>
+              Carrinho
+            </button>
+            <button
+              aria-current={currentPage === "planned" ? "page" : undefined}
+              className={currentPage === "planned" ? "sidebar-item active" : "sidebar-item"}
+              onClick={() => setCurrentPage("planned")}
+              type="button"
+            >
+              <span aria-hidden="true">📝</span>
+              Lista de Compras
+            </button>
+            <button
+              aria-current={currentPage === "history" ? "page" : undefined}
+              className={currentPage === "history" ? "sidebar-item active" : "sidebar-item"}
+              onClick={() => setCurrentPage("history")}
+              type="button"
+            >
+              <span aria-hidden="true">📋</span>
+              Histórico
+            </button>
+          </nav>
 
-      <footer className="app-footer">{authorized ? "Sessão compartilhada entre os dispositivos conectados." : "Crie uma sessão ou entre com um PIN."}</footer>
+          <div className="sidebar-bottom">
+            <button
+              className="sidebar-leave-button"
+              disabled={busy}
+              onClick={() => performLeave(false)}
+              type="button"
+            >
+              <span aria-hidden="true">↪</span>
+              Sair da sessão
+            </button>
+          </div>
+        </aside>
+      )}
+
+      <div className="app-main-column">
+        <InstallPrompt />
+        {error && <div className="app-error" role="alert">{error}</div>}
+
+        {loading || accessStep === "loading" ? <main className="loading-state" aria-live="polite">Conectando à sessão...</main>
+          : accessStep === "error" ? <main className="page-content"><div className="empty-state"><h3>Não foi possível conectar</h3><p>Verifique a conexão e recarregue a página.</p></div></main>
+          : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
+          : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
+          : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
+          : currentPage === "planned" ? <ShoppingListPage items={plannedItems} onSave={savePlannedItem} onDelete={deletePlannedItem}
+              activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
+          : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
+              onFinish={finishPurchase} onStart={startPurchase} onPurchasePlannedItem={purchasePlannedItem}
+              onGetEditHistory={getSharedItemEditHistory} onHistoryLoadingChange={handleHistoryLoadingChange}
+              activeAccount={{ name: deviceName }} busy={busy} />}
+
+        <footer className="app-footer">{authorized ? "Sessão compartilhada entre os dispositivos conectados." : "Crie uma sessão ou entre com um PIN."}</footer>
+      </div>
 
       {leaveConfirmation && (
         <div className="session-confirm-backdrop" role="presentation">
