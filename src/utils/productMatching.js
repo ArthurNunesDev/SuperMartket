@@ -41,9 +41,11 @@ export function productNameSimilarity(firstValue, secondValue) {
   if (!first || !second) return 0;
   if (first === second) return 1;
 
-  const firstNumbers = first.match(/\d+/g) ?? [];
-  const secondNumbers = second.match(/\d+/g) ?? [];
-  if (firstNumbers.join("|") !== secondNumbers.join("|")) return 0;
+  const firstMeasurements = first.match(/\d+(?:\s*(?:kg|mg|ml|l|un|und|cm|mm|m|g))?/g) ?? [];
+  const secondMeasurements = second.match(/\d+(?:\s*(?:kg|mg|ml|l|un|und|cm|mm|m|g))?/g) ?? [];
+  const normalizedFirstMeasurements = firstMeasurements.map((value) => value.replace(/\s+/g, ""));
+  const normalizedSecondMeasurements = secondMeasurements.map((value) => value.replace(/\s+/g, ""));
+  if (normalizedFirstMeasurements.join("|") !== normalizedSecondMeasurements.join("|")) return 0;
 
   const firstTokens = first.split(" ").sort();
   const secondTokens = second.split(" ").sort();

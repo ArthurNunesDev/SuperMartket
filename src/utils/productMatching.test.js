@@ -20,6 +20,7 @@ test("recognizes accent differences and adjacent typing errors", () => {
 test("keeps products with different package sizes separate", () => {
   assert.equal(findDuplicateProduct([{ id: "1", name: "Leite 1L" }], "Leite 2L"), null);
   assert.equal(findDuplicateProduct([{ id: "2", name: "Arroz 5kg" }], "Arroz 1kg"), null);
+  assert.equal(findDuplicateProduct([{ id: "3", name: "Café 500g" }], "Café 500ml"), null);
 });
 
 test("does not match unrelated short names", () => {
