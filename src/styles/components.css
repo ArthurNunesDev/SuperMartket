@@ -846,27 +846,27 @@
   }
 }
 
-:root[data-theme="dark"] .field > span { color: #c6d2ca; }
+:root[data-theme="dark"] .field > span { color: #cbd5e1; }
 
 :root[data-theme="dark"] .field input,
 :root[data-theme="dark"] .field select {
-  border-color: #3b4b41;
+  border-color: #3b4b60;
   color: var(--ink);
-  background: #17221c;
+  background: #182235;
 }
 
-:root[data-theme="dark"] .field input::placeholder { color: #7f9085; }
+:root[data-theme="dark"] .field input::placeholder { color: #8492a6; }
 
 :root[data-theme="dark"] .input-with-prefix {
-  border-color: #3b4b41;
-  background: #17221c;
+  border-color: #3b4b60;
+  background: #182235;
 }
 
 :root[data-theme="dark"] .input-with-prefix input { background: transparent; }
 
 :root[data-theme="dark"] .icon-button {
-  color: #c0ccc4;
-  background: #29372f;
+  color: #cbd5e1;
+  background: #2b374b;
 }
 
 :root[data-theme="dark"] .icon-button:hover {
@@ -876,16 +876,16 @@
 
 :root[data-theme="dark"] .danger-action:hover {
   color: #ffaaaa;
-  background: #482b2b;
+  background: #482b35;
 }
 
 :root[data-theme="dark"] .app-error {
-  border-color: #633b3b;
-  color: #ffb6b6;
-  background: #382323;
+  border-color: #633b48;
+  color: #ffc0c8;
+  background: #38232b;
 }
 
-:root[data-theme="dark"] .app-footer { color: #819187; }
+:root[data-theme="dark"] .app-footer { color: #8795a9; }
 
 
 .account-form,
@@ -972,7 +972,7 @@
 :root[data-theme="dark"] .account-select {
   border-color: var(--line);
   color: var(--ink);
-  background: #17221c;
+  background: #182235;
 }
 
 :root[data-theme="dark"] .account-select.active {
@@ -1033,13 +1033,13 @@
 :root[data-theme="dark"] .back-button {
   border-color: var(--green-dark);
   color: var(--ink);
-  background: #252f29;
+  background: #263449;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
 }
 
 :root[data-theme="dark"] .back-button:hover {
   border-color: var(--green);
-  color: #111a15;
+  color: #111827;
   background: var(--green);
 }
 
@@ -1214,7 +1214,7 @@
 }
 
 :root[data-theme="dark"] .app-loading-overlay {
-  background: #111a15;
+  background: #111827;
 }
 
 .app-loading-brand {
@@ -1401,11 +1401,11 @@
 }
 
 :root[data-theme="dark"] .install-prompt-instructions {
-  background: #243b2d;
+  background: #293b43;
 }
 
 :root[data-theme="dark"] .install-prompt-instructions strong {
-  color: #a7d9b8;
+  color: #a7d9c7;
 }
 
 
@@ -1516,7 +1516,7 @@
 .secondary-button { color: var(--ink); background: var(--green-soft); }
 .danger-button { color: #fff; background: #b54747; }
 .danger-button:hover:not(:disabled) { background: #963838; }
-:root[data-theme="dark"] .planned-price-field .input-with-prefix { border-color: var(--line); background: #17221c; }
+:root[data-theme="dark"] .planned-price-field .input-with-prefix { border-color: var(--line); background: #182235; }
 @media (max-width: 520px) {
   .session-access-card, .planned-list-section, .planned-cart-panel { padding: 18px; border-radius: 15px; }
   .planned-cart-row { flex-direction: column; }
