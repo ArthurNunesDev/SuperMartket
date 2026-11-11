@@ -77,8 +77,23 @@ export function getFrequentProducts(purchases, limit = 5) {
     if (purchase.status !== "completed") continue;
     const seenInPurchase = new Set();
     for (const item of purchase.items ?? []) {
-      const key = normalizeProductName(item.name);
-      if (!key) continue;
+      const normalizedKey = normalizeProductName(item.name);
+      if (!normalizedKey) continue;
+
+      let key = normalizedKey;
+      if (!products.has(key)) {
+        let bestKey = null;
+        let bestScore = 0.79;
+        for (const [existingKey, existingProduct] of products) {
+          const score = productNameSimilarity(item.name, existingProduct.name);
+          if (score > bestScore) {
+            bestKey = existingKey;
+            bestScore = score;
+          }
+        }
+        if (bestKey) key = bestKey;
+      }
+
       const entry = products.get(key) ?? {
         name: item.name,
         count: 0,

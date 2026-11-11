@@ -32,6 +32,16 @@ test("ignores the item currently being edited", () => {
   assert.equal(findDuplicateProduct(items, "arros", "1")?.item.id, undefined);
 });
 
+test("groups frequent products despite simple typing mistakes", () => {
+  const products = getFrequentProducts([
+    { status: "completed", completedAt: "2026-11-01", items: [{ name: "Sabão", quantityMilli: 1000 }] },
+    { status: "completed", completedAt: "2026-11-02", items: [{ name: "Saboa", quantityMilli: 2000 }] },
+  ]);
+  assert.equal(products.length, 1);
+  assert.equal(products[0].count, 2);
+  assert.equal(products[0].quantityMilli, 2000);
+});
+
 test("counts a product once per purchase and keeps latest quantity", () => {
   const products = getFrequentProducts([
     { status: "completed", completedAt: "2026-11-01", items: [{ name: "Arroz", quantityMilli: 1000 }, { name: "ARROZ", quantityMilli: 2000 }] },
