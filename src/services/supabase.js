@@ -195,13 +195,17 @@ export async function getShoppingListItems() {
 }
 
 export async function saveShoppingListItem(item, addedByName) {
-  const { error } = await supabase.from("shopping_list_items").insert({
+  const values = {
     name: item.name.trim(),
     quantity_milli: item.quantityMilli,
     unit_price_cents: item.unitPriceCents,
-    added_by_name: addedByName,
-  });
+  };
+  const query = item.id
+    ? supabase.from("shopping_list_items").update(values).eq("id", item.id).eq("status", "pending")
+    : supabase.from("shopping_list_items").insert({ ...values, added_by_name: addedByName });
+  const { data, error } = await query.select("id").maybeSingle();
   if (error) throw error;
+  if (item.id && !data) throw new Error("Este item não está mais disponível para edição.");
 }
 
 export async function deleteShoppingListItem(itemId) {
