@@ -24,9 +24,6 @@ function jsonResponse(body: Record<string, unknown>, status = 200, headers: Reco
 }
 const PIN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
 function generatePin(): string {
   for (let attempt = 0; attempt < 16; attempt += 1) {
     const bytes = new Uint8Array(8);
