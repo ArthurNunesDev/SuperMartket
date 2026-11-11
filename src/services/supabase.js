@@ -200,12 +200,22 @@ export async function saveShoppingListItem(item, addedByName) {
     quantity_milli: item.quantityMilli,
     unit_price_cents: item.unitPriceCents,
   };
-  const query = item.id
-    ? supabase.from("shopping_list_items").update(values).eq("id", item.id).eq("status", "pending")
-    : supabase.from("shopping_list_items").insert({ ...values, added_by_name: addedByName });
-  const { data, error } = await query.select("id").maybeSingle();
+  if (item.id) {
+    const { data, error } = await supabase.rpc("update_planned_shopping_item", {
+      p_item_id: item.id,
+      p_name: values.name,
+      p_quantity_milli: values.quantity_milli,
+      p_unit_price_cents: values.unit_price_cents,
+    });
+    if (error) throw error;
+    if (!data) throw new Error("Este item não está mais disponível para edição.");
+    return;
+  }
+  const { error } = await supabase.from("shopping_list_items").insert({
+    ...values,
+    added_by_name: addedByName,
+  });
   if (error) throw error;
-  if (item.id && !data) throw new Error("Este item não está mais disponível para edição.");
 }
 
 export async function deleteShoppingListItem(itemId) {
