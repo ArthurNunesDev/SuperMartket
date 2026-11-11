@@ -39,7 +39,6 @@ export default function AccessPage({ step, onSubmitPin, onSubmitName, onCreateSe
                 value={pin}
               />
             </label>
-            {error && <p className="form-error" role="alert">{error}</p>}
             <button className="primary-button form-submit" disabled={busy || pin.length !== 8} type="submit">
               {busy ? "Aguarde..." : "Entrar na sessão"}
             </button>
