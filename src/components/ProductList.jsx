@@ -25,9 +25,10 @@ export default function ProductList({ items, onEdit, onDelete, disabled = false 
 
       <ul>
         {items.map((item) => (
-          <li className="product-row" key={item.id}>
+          <li className={item.plannedItemId ? "product-row planned-product-row" : "product-row"} key={item.id}>
             <div className="product-main">
               <strong>{item.name}</strong>
+              {item.plannedItemId && <span className="planned-origin-tag">Da Lista de Compras</span>}
               <span>
                 {formatQuantity(item.quantityMilli)} × {formatCurrency(item.unitPriceCents)}
                 <span className="product-author">Adicionado por {item.addedByName || "não identificado"}</span>
