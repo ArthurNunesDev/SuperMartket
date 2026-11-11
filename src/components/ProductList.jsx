@@ -1,8 +1,9 @@
 import React from "react";
+import ItemFilters from "./ItemFilters.jsx";
 import { calculateItemSubtotal, formatQuantity } from "../utils/calculations.js";
 import { formatCurrency } from "../utils/currency.js";
 
-export default function ProductList({ items, totalItems = items.length, hasActiveFilters = false, onEdit, onDelete, disabled = false }) {
+export default function ProductList({ items, totalItems = items.length, hasActiveFilters = false, query = "", onQueryChange, participant = "", onParticipantChange, participants = [], onEdit, onDelete, disabled = false }) {
   if (totalItems === 0) {
     return (
       <div className="empty-state">
@@ -22,6 +23,7 @@ export default function ProductList({ items, totalItems = items.length, hasActiv
         </div>
         <span className="item-count">{items.length} de {totalItems} {totalItems === 1 ? "item" : "itens"}</span>
       </div>
+      <ItemFilters query={query} onQueryChange={onQueryChange} participant={participant} onParticipantChange={onParticipantChange} participants={participants} label="Pesquisar produtos do carrinho" />
 
       {items.length === 0 ? (
         <div className="filter-empty-state" role="status">
