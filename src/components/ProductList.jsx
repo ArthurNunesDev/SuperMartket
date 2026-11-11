@@ -2,8 +2,8 @@ import React from "react";
 import { calculateItemSubtotal, formatQuantity } from "../utils/calculations.js";
 import { formatCurrency } from "../utils/currency.js";
 
-export default function ProductList({ items, onEdit, onDelete, disabled = false }) {
-  if (items.length === 0) {
+export default function ProductList({ items, totalItems = items.length, hasActiveFilters = false, onEdit, onDelete, disabled = false }) {
+  if (totalItems === 0) {
     return (
       <div className="empty-state">
         <div className="empty-icon" aria-hidden="true">🛒</div>
@@ -20,31 +20,38 @@ export default function ProductList({ items, onEdit, onDelete, disabled = false 
           <span className="eyebrow">SUA LISTA</span>
           <h2 id="items-title">Produtos</h2>
         </div>
-        <span className="item-count">{items.length} {items.length === 1 ? "item" : "itens"}</span>
+        <span className="item-count">{items.length} de {totalItems} {totalItems === 1 ? "item" : "itens"}</span>
       </div>
 
-      <ul>
-        {items.map((item) => (
-          <li className={item.plannedItemId ? "product-row planned-product-row" : "product-row"} key={item.id}>
-            <div className="product-main">
-              <strong>{item.name}</strong>
-              {item.plannedItemId && <span className="planned-origin-tag">Da Lista de Compras</span>}
-              <span>
-                {formatQuantity(item.quantityMilli)} × {formatCurrency(item.unitPriceCents)}
-                <span className="product-author">Adicionado por {item.addedByName || "não identificado"}</span>
-                {item.editedByName && <span className="product-editor">Editado por {item.editedByName}</span>}
-              </span>
-            </div>
-            <div className="product-end">
-              <strong>{formatCurrency(calculateItemSubtotal(item.quantityMilli, item.unitPriceCents))}</strong>
-              <div className="product-actions">
-                <button aria-label={`Editar ${item.name}`} className="icon-button" disabled={disabled} onClick={() => onEdit(item)} type="button">✎</button>
-                <button aria-label={`Excluir ${item.name}`} className="icon-button danger-action" disabled={disabled} onClick={() => onDelete(item.id)} type="button">×</button>
+      {items.length === 0 ? (
+        <div className="filter-empty-state" role="status">
+          <strong>Nenhum produto encontrado</strong>
+          <span>{hasActiveFilters ? "Tente alterar a pesquisa ou o participante selecionado." : "Os produtos aparecerão aqui."}</span>
+        </div>
+      ) : (
+        <ul>
+          {items.map((item) => (
+            <li className={item.plannedItemId ? "product-row planned-product-row" : "product-row"} key={item.id}>
+              <div className="product-main">
+                <strong>{item.name}</strong>
+                {item.plannedItemId && <span className="planned-origin-tag">Da Lista de Compras</span>}
+                <span>
+                  {formatQuantity(item.quantityMilli)} × {formatCurrency(item.unitPriceCents)}
+                  <span className="product-author">Adicionado por {item.addedByName || "não identificado"}</span>
+                  {item.editedByName && <span className="product-editor">Editado por {item.editedByName}</span>}
+                </span>
               </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+              <div className="product-end">
+                <strong>{formatCurrency(calculateItemSubtotal(item.quantityMilli, item.unitPriceCents))}</strong>
+                <div className="product-actions">
+                  <button aria-label={`Editar ${item.name}`} className="icon-button" disabled={disabled} onClick={() => onEdit(item)} type="button">✎</button>
+                  <button aria-label={`Excluir ${item.name}`} className="icon-button danger-action" disabled={disabled} onClick={() => onDelete(item.id)} type="button">×</button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
