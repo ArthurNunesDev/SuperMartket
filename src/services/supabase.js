@@ -113,20 +113,18 @@ export async function createSharedPurchase() {
   throw error;
 }
 
-export async function saveSharedItem(purchaseId, item, addedByName, isUpdate = false) {
+export async function saveSharedItem(purchaseId, item, isUpdate = false) {
   const row = {
     purchase_id: purchaseId,
     name: item.name.trim(),
     quantity_milli: item.quantityMilli,
     unit_price_cents: item.unitPriceCents,
-    added_by_name: addedByName,
   };
   const query = isUpdate
     ? supabase.from("purchase_items").update({
         name: row.name,
         quantity_milli: row.quantity_milli,
         unit_price_cents: row.unit_price_cents,
-        edited_by_name: item.editedByName,
       }).eq("id", item.id)
     : supabase.from("purchase_items").insert({ ...row, id: item.id });
   const { error } = await query;
@@ -197,7 +195,7 @@ export async function getShoppingListItems() {
   }));
 }
 
-export async function saveShoppingListItem(item, addedByName) {
+export async function saveShoppingListItem(item) {
   const values = {
     name: item.name.trim(),
     quantity_milli: item.quantityMilli,
@@ -214,10 +212,7 @@ export async function saveShoppingListItem(item, addedByName) {
     if (!data) throw new Error("Este item não está mais disponível para edição.");
     return;
   }
-  const { error } = await supabase.from("shopping_list_items").insert({
-    ...values,
-    added_by_name: addedByName,
-  });
+  const { error } = await supabase.from("shopping_list_items").insert(values);
   if (error) throw error;
 }
 
@@ -226,12 +221,12 @@ export async function deleteShoppingListItem(itemId) {
   if (error) throw error;
 }
 
-export async function purchasePlannedShoppingItem(itemId, purchaseId, priceCents, buyerName) {
+export async function purchasePlannedShoppingItem(itemId, purchaseId, priceCents) {
   const { data, error } = await supabase.rpc("purchase_planned_shopping_item", {
     p_item_id: itemId,
     p_purchase_id: purchaseId,
     p_unit_price_cents: priceCents,
-    p_buyer_name: buyerName,
+    p_buyer_name: null,
   });
   if (error) throw error;
   return data;
