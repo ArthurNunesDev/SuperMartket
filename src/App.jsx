@@ -251,7 +251,6 @@ export default function App() {
       setPlannedItems([]);
       setCurrentPage("shopping");
       setAccessStep("session");
-      setMenuOpen(false);
       setError("");
       setAccessError("");
       try {
