@@ -43,15 +43,14 @@ set search_path = pg_catalog
 as $$
 declare
   actor_name text;
-  actor_session_id uuid;
 begin
   if auth.uid() is null then
     raise exception 'Authentication required';
   end if;
 
   if tg_table_name = 'purchase_items' then
-    select member.display_name, purchase.session_id
-      into actor_name, actor_session_id
+    select member.display_name
+      into actor_name
     from private.shopping_session_members member
     join public.purchases purchase on purchase.session_id = member.session_id
     where member.user_id = auth.uid()
