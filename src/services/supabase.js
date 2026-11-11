@@ -368,8 +368,12 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   };
 
   const handleInteraction = () => recordActivity();
+  const handlePointerMove = () => {
+    if (Date.now() - lastActivityAt >= 5_000) recordActivity();
+  };
   document.addEventListener("visibilitychange", handleVisibilityChange);
   document.addEventListener("pointerdown", handleInteraction, { passive: true });
+  document.addEventListener("pointermove", handlePointerMove, { passive: true });
   document.addEventListener("keydown", handleInteraction);
   document.addEventListener("scroll", handleInteraction, { passive: true, capture: true });
   document.addEventListener("input", handleInput, true);
@@ -389,6 +393,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
       if (status === "SUBSCRIBED") {
         lastActivityAt = Date.now();
         trackStatus(document.visibilityState === "visible" ? "online" : "inactive", true);
+        scheduleInactivity();
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
         onError?.(error instanceof Error ? error : new Error("A conexão de presença foi interrompida."));
       }
@@ -402,6 +407,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     if (typingTimer) clearTimeout(typingTimer);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
     document.removeEventListener("pointerdown", handleInteraction);
+    document.removeEventListener("pointermove", handlePointerMove);
     document.removeEventListener("keydown", handleInteraction);
     document.removeEventListener("scroll", handleInteraction, true);
     document.removeEventListener("input", handleInput, true);

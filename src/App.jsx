@@ -125,9 +125,10 @@ export default function App() {
     setAccessError("");
     const storedName = getStoredDeviceName();
     setDeviceName(storedName);
-    setAccessStep(storedName ? "ready" : "name");
+    setAccessStep("loading");
     await refreshPurchases();
     if (storedName) await startSessionActivity(nextSession, storedName);
+    setAccessStep(storedName ? "ready" : "name");
     realtimeCleanupRef.current?.();
     realtimeCleanupRef.current = subscribeToSharedPurchases(nextSession.id, () => {
       refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
@@ -207,8 +208,8 @@ export default function App() {
     const nextName = typeof name === "string" ? name.trim() : "";
     if (!nextName || nextName.length > 50) { setAccessError("Informe um nome válido, com até 50 caracteres."); return; }
     try {
-      if (session) await startSessionActivity(session, nextName);
       localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
+      if (session) await startSessionActivity(session, nextName);
     } catch (nameError) {
       setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível salvar seu nome.");
       return;
@@ -345,6 +346,8 @@ export default function App() {
       setSessionMembers([]);
       setPresenceState({});
       setTypingMembers({});
+      typingTimersRef.current.forEach((timer) => clearTimeout(timer));
+      typingTimersRef.current.clear();
       setAuthorized(false);
       setSession(null);
       setActivePurchase(null);
