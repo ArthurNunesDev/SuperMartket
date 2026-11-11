@@ -1697,3 +1697,104 @@
   .history-summary strong { font-size: 0.82rem; }
   .history-entry-toggle { padding: 14px; }
 }
+
+
+/* Search and participant filters for shopping lists. */
+.item-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.55fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.item-search-field,
+.item-participant-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.item-search-field > span,
+.item-participant-field > span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+.item-search-field input,
+.item-participant-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.82rem;
+}
+.item-search-field input:focus,
+.item-participant-field select:focus {
+  outline: 2px solid color-mix(in srgb, var(--green) 30%, transparent);
+  border-color: var(--green);
+}
+.item-filters-reset {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--green-dark);
+  background: var(--surface);
+  font-size: 0.74rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.item-filters-reset:hover {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+.filter-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px 14px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.filter-empty-state strong {
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+.filter-empty-state span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+:root[data-theme="dark"] .item-search-field input,
+:root[data-theme="dark"] .item-participant-field select {
+  border-color: var(--line);
+  color: var(--ink);
+  background: #182235;
+}
+:root[data-theme="dark"] .item-filters-reset {
+  border-color: var(--line);
+  color: var(--green-dark);
+  background: var(--surface);
+}
+:root[data-theme="dark"] .item-filters-reset:hover {
+  background: var(--green-soft);
+}
+@media (max-width: 620px) {
+  .item-filters {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 13px;
+  }
+  .item-filters-reset {
+    width: 100%;
+  }
+}
