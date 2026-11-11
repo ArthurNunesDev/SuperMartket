@@ -234,9 +234,9 @@ export async function purchasePlannedShoppingItem(itemId, purchaseId, priceCents
   return data;
 }
 
-export function subscribeToSharedPurchases(onChange, onError) {
+export function subscribeToSharedPurchases(sessionId, onChange, onError) {
   const channel = supabase
-    .channel("shared-shopping-session")
+    .channel(`session:${sessionId}`, { config: { private: true } })
     .on("postgres_changes", { event: "*", schema: "public", table: "purchases" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "purchase_items" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "shopping_list_items" }, onChange)

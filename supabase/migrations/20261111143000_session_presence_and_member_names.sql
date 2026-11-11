@@ -74,3 +74,15 @@ with check (
   and (select private.current_shopping_session_id()) is not null
   and (select realtime.topic()) = 'session:' || (select private.current_shopping_session_id())::text
 );
+
+
+drop policy if exists "session members can read purchase activity channel" on realtime.messages;
+create policy "session members can read purchase activity channel"
+on realtime.messages
+for select
+to authenticated
+using (
+  realtime.messages.extension in ('broadcast', 'presence')
+  and (select private.current_shopping_session_id()) is not null
+  and (select realtime.topic()) = 'session:' || (select private.current_shopping_session_id())::text
+);

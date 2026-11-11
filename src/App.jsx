@@ -129,7 +129,7 @@ export default function App() {
     await refreshPurchases();
     if (storedName) await startSessionActivity(nextSession, storedName);
     realtimeCleanupRef.current?.();
-    realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
+    realtimeCleanupRef.current = subscribeToSharedPurchases(nextSession.id, () => {
       refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
     }, (subscriptionError) => setError(subscriptionError.message));
   }, [refreshPurchases, startSessionActivity]);
@@ -163,7 +163,7 @@ export default function App() {
         if (!mounted) return;
         if (storedName) await startSessionActivity(existingSession, storedName);
         realtimeCleanupRef.current?.();
-        realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
+        realtimeCleanupRef.current = subscribeToSharedPurchases(existingSession.id, () => {
           refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
         }, (subscriptionError) => setError(subscriptionError.message));
       } catch (initializationError) {
@@ -233,13 +233,11 @@ export default function App() {
       return;
     }
     try {
-      if (session) await saveSessionMemberName(nextName);
-      localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
       if (session) {
-        setSessionMembers(await getSessionMembers());
         activityCleanupRef.current?.();
         await startSessionActivity(session, nextName);
       }
+      localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
     } catch (nameError) {
       setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível atualizar seu nome.");
       return;
