@@ -1265,18 +1265,3 @@
   .planned-cart-action { width: 100%; justify-items: stretch; }
   .planned-list-card { align-items: flex-start; }
 }
-
-.planned-origin-tag {
-  width: fit-content;
-  margin-top: 3px;
-  padding: 4px 8px;
-  border-radius: 7px;
-  color: #76551a;
-  background: #fff2d8;
-  font-size: 0.68rem;
-  font-weight: 750;
-}
-:root[data-theme="dark"] .planned-origin-tag {
-  color: #f2d28e;
-  background: #493b22;
-}

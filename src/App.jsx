@@ -252,8 +252,6 @@ export default function App() {
       setLeaveConfirmation(false);
       realtimeCleanupRef.current?.();
       realtimeCleanupRef.current = null;
-      await signOutDevice();
-      await ensureDeviceSession();
       setAuthorized(false);
       setSession(null);
       setActivePurchase(null);
@@ -264,6 +262,12 @@ export default function App() {
       setMenuOpen(false);
       setError("");
       setAccessError("");
+      try {
+        await signOutDevice();
+      } catch {
+        // Membership has already been removed server-side; the current auth user can still create or join.
+      }
+      await ensureDeviceSession();
     } catch (leaveError) {
       setError(leaveError instanceof Error ? leaveError.message : "Não foi possível sair da sessão.");
     } finally { setBusy(false); }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { formatQuantity } from "../utils/calculations.js";
-import { parseCurrency } from "../utils/currency.js";
+import { formatCurrency, parseCurrency } from "../utils/currency.js";
 
 export default function PlannedItemsPanel({ items, purchase, onPurchase, onStart, busy }) {
   const [prices, setPrices] = useState({});
