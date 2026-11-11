@@ -17,6 +17,11 @@ test("recognizes accent differences and adjacent typing errors", () => {
   assert.equal(findDuplicateProduct([{ id: "2", name: "Arroz" }], "arros")?.item.id, "2");
 });
 
+test("keeps products with different package sizes separate", () => {
+  assert.equal(findDuplicateProduct([{ id: "1", name: "Leite 1L" }], "Leite 2L"), null);
+  assert.equal(findDuplicateProduct([{ id: "2", name: "Arroz 5kg" }], "Arroz 1kg"), null);
+});
+
 test("does not match unrelated short names", () => {
   assert.equal(findDuplicateProduct([{ id: "1", name: "Coca" }], "coco"), null);
   assert.equal(findDuplicateProduct([{ id: "1", name: "Arroz" }], "Feijão"), null);
