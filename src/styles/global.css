@@ -21,17 +21,17 @@
 }
 
 :root[data-theme="dark"] {
-  color: #e7eee9;
-  background: #111a15;
+  color: #e8edf5;
+  background: #111827;
   --green: #66c99d;
   --green-dark: #8adbb4;
-  --green-soft: #203d31;
-  --ink: #e7eee9;
-  --muted: #a2b0a7;
-  --line: #34443b;
-  --surface: #1d2a23;
+  --green-soft: #263b3a;
+  --ink: #e8edf5;
+  --muted: #a3afc2;
+  --line: #354256;
+  --surface: #1e293b;
   --danger: #ff9292;
-  --shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
   color-scheme: dark;
 }
 
