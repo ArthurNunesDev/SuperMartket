@@ -247,3 +247,166 @@ export function subscribeToSharedPurchases(onChange, onError) {
     });
   return () => { supabase.removeChannel(channel); };
 }
+
+
+export async function saveSessionMemberName(name) {
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName || normalizedName.length > 50) {
+    throw new Error("Informe um nome válido, com até 50 caracteres.");
+  }
+  const result = await invokeShoppingSession({ action: "set-name", name: normalizedName });
+  if (result?.saved !== true) throw new Error("Não foi possível salvar seu nome na sessão.");
+  return result;
+}
+
+export async function getSessionMembers() {
+  const result = await invokeShoppingSession({ action: "members" });
+  return Array.isArray(result.members) ? result.members : [];
+}
+
+export async function getCurrentUserId() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user?.id) throw new Error("Não foi possível identificar este dispositivo.");
+  return data.user.id;
+}
+
+export function subscribeToSessionActivity(sessionId, userId, name, onPresence, onTyping, onRosterChange, onError) {
+  let active = true;
+  let currentStatus = document.visibilityState === "visible" ? "online" : "inactive";
+  let lastActivityAt = Date.now();
+  let inactivityTimer = null;
+  let typingTimer = null;
+  let typing = false;
+  let lastTypingField = "";
+
+  const channel = supabase.channel(`session:${sessionId}`, {
+    config: {
+      private: true,
+      presence: { key: `tab:${crypto.randomUUID()}` },
+    },
+  });
+
+  const trackStatus = async (status, force = false) => {
+    if (!active || (!force && status === currentStatus)) return;
+    currentStatus = status;
+    try {
+      await channel.track({
+        userId,
+        name,
+        status,
+        lastActiveAt: new Date(lastActivityAt).toISOString(),
+      });
+    } catch (trackError) {
+      onError?.(trackError instanceof Error ? trackError : new Error("Não foi possível atualizar sua presença."));
+    }
+  };
+
+  const stopTyping = () => {
+    if (!typing) return;
+    typing = false;
+    if (typingTimer) clearTimeout(typingTimer);
+    typingTimer = null;
+    channel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId, name, typing: false, field: lastTypingField },
+    }).catch(() => {});
+  };
+
+  const sendTyping = (field) => {
+    if (!active || document.visibilityState !== "visible") return;
+    lastTypingField = field;
+    if (!typing) {
+      typing = true;
+      channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { userId, name, typing: true, field },
+      }).catch(() => {});
+    }
+    if (typingTimer) clearTimeout(typingTimer);
+    typingTimer = setTimeout(stopTyping, 1800);
+  };
+
+  const scheduleInactivity = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      trackStatus("inactive");
+      stopTyping();
+    }, 120_000);
+  };
+
+  const recordActivity = () => {
+    if (!active || document.visibilityState !== "visible") return;
+    lastActivityAt = Date.now();
+    trackStatus("online");
+    scheduleInactivity();
+  };
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState !== "visible") {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      trackStatus("inactive");
+      stopTyping();
+      return;
+    }
+    recordActivity();
+  };
+
+  const handleInput = (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const isTextField = target.matches("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea, [contenteditable=true]");
+    if (!isTextField) return;
+    recordActivity();
+    const field = target.getAttribute("aria-label")
+      || target.getAttribute("placeholder")
+      || target.closest("label")?.textContent?.trim()
+      || "um campo";
+    sendTyping(field.slice(0, 60));
+  };
+
+  const handleInteraction = () => recordActivity();
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  document.addEventListener("pointerdown", handleInteraction, { passive: true });
+  document.addEventListener("keydown", handleInteraction);
+  document.addEventListener("scroll", handleInteraction, { passive: true, capture: true });
+  document.addEventListener("input", handleInput, true);
+  document.addEventListener("touchstart", handleInteraction, { passive: true });
+
+  channel
+    .on("presence", { event: "sync" }, () => {
+      if (active) onPresence?.(channel.presenceState());
+      onRosterChange?.();
+    })
+    .on("presence", { event: "join" }, () => onRosterChange?.())
+    .on("presence", { event: "leave" }, () => onRosterChange?.())
+    .on("broadcast", { event: "typing" }, ({ payload }) => {
+      if (payload?.userId && payload.userId !== userId) onTyping?.(payload);
+    })
+    .subscribe((status, error) => {
+      if (status === "SUBSCRIBED") {
+        lastActivityAt = Date.now();
+        trackStatus(document.visibilityState === "visible" ? "online" : "inactive", true);
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        onError?.(error instanceof Error ? error : new Error("A conexão de presença foi interrompida."));
+      }
+    });
+
+  scheduleInactivity();
+
+  return () => {
+    active = false;
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (typingTimer) clearTimeout(typingTimer);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    document.removeEventListener("pointerdown", handleInteraction);
+    document.removeEventListener("keydown", handleInteraction);
+    document.removeEventListener("scroll", handleInteraction, true);
+    document.removeEventListener("input", handleInput, true);
+    document.removeEventListener("touchstart", handleInteraction);
+    channel.untrack().catch(() => {});
+    supabase.removeChannel(channel);
+  };
+}

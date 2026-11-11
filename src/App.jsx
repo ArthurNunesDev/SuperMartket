@@ -4,13 +4,15 @@ import ShoppingPage from "./pages/ShoppingPage.jsx";
 import ShoppingListPage from "./pages/ShoppingListPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
+import SessionPage from "./pages/SessionPage.jsx";
 import { getSessionParticipantNames } from "./utils/itemFilters.js";
 import {
   checkShoppingSession, completeSharedPurchase, createSharedPurchase, createShoppingSession,
   deleteSharedItem, deleteShoppingListItem, ensureDeviceSession, getSharedPurchases,
   getSharedItemEditHistory, getShoppingListItems, joinShoppingSession, leaveShoppingSession,
   purchasePlannedShoppingItem, saveSharedItem, saveShoppingListItem, signOutDevice,
-  subscribeToSharedPurchases,
+  subscribeToSharedPurchases, getSessionMembers, saveSessionMemberName, getCurrentUserId,
+  subscribeToSessionActivity,
 } from "./services/supabase.js";
 
 const THEME_STORAGE_KEY = "supermartket-theme";
@@ -46,8 +48,13 @@ export default function App() {
   const [leaveConfirmation, setLeaveConfirmation] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [sessionMembers, setSessionMembers] = useState([]);
+  const [presenceState, setPresenceState] = useState({});
+  const [typingMembers, setTypingMembers] = useState({});
   const refreshCountRef = useRef(0);
   const realtimeCleanupRef = useRef(null);
+  const activityCleanupRef = useRef(null);
+  const typingTimersRef = useRef(new Map());
 
   const refreshPurchases = useCallback(async () => {
     refreshCountRef.current += 1;
@@ -66,6 +73,52 @@ export default function App() {
 
   const handleHistoryLoadingChange = useCallback((isLoading) => setHistoryLoading(isLoading), []);
 
+  const startSessionActivity = useCallback(async (nextSession, memberName) => {
+    if (!nextSession?.id || !memberName) return;
+    await saveSessionMemberName(memberName);
+    const [members, userId] = await Promise.all([getSessionMembers(), getCurrentUserId()]);
+    setSessionMembers(members);
+    activityCleanupRef.current?.();
+    activityCleanupRef.current = subscribeToSessionActivity(
+      nextSession.id,
+      userId,
+      memberName,
+      (nextPresence) => setPresenceState(nextPresence),
+      (typingEvent) => {
+        const { userId: typingUserId, typing, name, field } = typingEvent;
+        if (!typingUserId) return;
+        const currentTimer = typingTimersRef.current.get(typingUserId);
+        if (currentTimer) clearTimeout(currentTimer);
+        setTypingMembers((current) => {
+          const updated = { ...current };
+          if (typing) updated[typingUserId] = { name, field };
+          else delete updated[typingUserId];
+          return updated;
+        });
+        if (typing) {
+          const timer = setTimeout(() => {
+            setTypingMembers((current) => {
+              if (!current[typingUserId]) return current;
+              const updated = { ...current };
+              delete updated[typingUserId];
+              return updated;
+            });
+            typingTimersRef.current.delete(typingUserId);
+          }, 2400);
+          typingTimersRef.current.set(typingUserId, timer);
+        } else {
+          typingTimersRef.current.delete(typingUserId);
+        }
+      },
+      () => {
+        getSessionMembers().then(setSessionMembers).catch(() => {
+          setError("Não foi possível atualizar os participantes da sessão.");
+        });
+      },
+      (activityError) => setError(activityError.message),
+    );
+  }, []);
+
   const activateSession = useCallback(async (nextSession) => {
     setSession(nextSession);
     setAuthorized(true);
@@ -74,11 +127,12 @@ export default function App() {
     setDeviceName(storedName);
     setAccessStep(storedName ? "ready" : "name");
     await refreshPurchases();
+    if (storedName) await startSessionActivity(nextSession, storedName);
     realtimeCleanupRef.current?.();
     realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
       refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
     }, (subscriptionError) => setError(subscriptionError.message));
-  }, [refreshPurchases]);
+  }, [refreshPurchases, startSessionActivity]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -107,6 +161,7 @@ export default function App() {
         setAccessStep(storedName ? "ready" : "name");
         await refreshPurchases();
         if (!mounted) return;
+        if (storedName) await startSessionActivity(existingSession, storedName);
         realtimeCleanupRef.current?.();
         realtimeCleanupRef.current = subscribeToSharedPurchases(() => {
           refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
@@ -125,8 +180,12 @@ export default function App() {
       mounted = false;
       realtimeCleanupRef.current?.();
       realtimeCleanupRef.current = null;
+      activityCleanupRef.current?.();
+      activityCleanupRef.current = null;
+      typingTimersRef.current.forEach((timer) => clearTimeout(timer));
+      typingTimersRef.current.clear();
     };
-  }, [refreshPurchases]);
+  }, [refreshPurchases, startSessionActivity]);
 
   async function withAccessAction(action) {
     setBusy(true);
@@ -144,11 +203,17 @@ export default function App() {
   function handleCreateSession() { return withAccessAction(createShoppingSession); }
   function handleSubmitPin(pin) { return withAccessAction(() => joinShoppingSession(pin)); }
 
-  function handleSubmitName(name) {
-    if (!name || name.length > 50) { setAccessError("Informe um nome válido, com até 50 caracteres."); return; }
-    try { localStorage.setItem(DEVICE_NAME_STORAGE_KEY, name); }
-    catch { setAccessError("Não foi possível salvar seu nome neste dispositivo."); return; }
-    setDeviceName(name);
+  async function handleSubmitName(name) {
+    const nextName = typeof name === "string" ? name.trim() : "";
+    if (!nextName || nextName.length > 50) { setAccessError("Informe um nome válido, com até 50 caracteres."); return; }
+    try {
+      if (session) await startSessionActivity(session, nextName);
+      localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
+    } catch (nameError) {
+      setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível salvar seu nome.");
+      return;
+    }
+    setDeviceName(nextName);
     setAccessError("");
     setAccessStep("ready");
     setCurrentPage("shopping");
@@ -160,7 +225,7 @@ export default function App() {
     setAccessError("");
   }
 
-  function saveDeviceName(event) {
+  async function saveDeviceName(event) {
     event.preventDefault();
     const nextName = nameDraft.trim();
     if (!nextName || nextName.length > 50) {
@@ -168,9 +233,15 @@ export default function App() {
       return;
     }
     try {
+      if (session) await saveSessionMemberName(nextName);
       localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
-    } catch {
-      setAccessError("Não foi possível salvar seu nome neste dispositivo.");
+      if (session) {
+        setSessionMembers(await getSessionMembers());
+        activityCleanupRef.current?.();
+        await startSessionActivity(session, nextName);
+      }
+    } catch (nameError) {
+      setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível atualizar seu nome.");
       return;
     }
     setDeviceName(nextName);
@@ -271,6 +342,11 @@ export default function App() {
       setLeaveConfirmation(false);
       realtimeCleanupRef.current?.();
       realtimeCleanupRef.current = null;
+      activityCleanupRef.current?.();
+      activityCleanupRef.current = null;
+      setSessionMembers([]);
+      setPresenceState({});
+      setTypingMembers({});
       setAuthorized(false);
       setSession(null);
       setActivePurchase(null);
@@ -366,6 +442,15 @@ export default function App() {
               <span aria-hidden="true">📋</span>
               Histórico
             </button>
+            <button
+              aria-current={currentPage === "session" ? "page" : undefined}
+              className={currentPage === "session" ? "sidebar-item active" : "sidebar-item"}
+              onClick={() => setCurrentPage("session")}
+              type="button"
+            >
+              <span aria-hidden="true">👥</span>
+              Sessão
+            </button>
           </nav>
 
           <div className="sidebar-bottom">
@@ -391,6 +476,7 @@ export default function App() {
           : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
           : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
           : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
+          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} typing={typingMembers} onBack={() => setCurrentPage("shopping")} />
           : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} participantNames={participantNames} onSave={savePlannedItem} onDelete={deletePlannedItem}
               activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
           : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} participantNames={participantNames} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
