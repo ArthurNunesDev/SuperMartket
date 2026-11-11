@@ -1,33 +1,16 @@
-import React, { useMemo } from "react";
-
-function getPresenceByMember(presence) {
-  const grouped = new Map();
-  Object.values(presence ?? {}).flat().forEach((entry) => {
-    if (!entry?.userId) return;
-    const current = grouped.get(entry.userId);
-    const rank = (status) => status === "online" ? 2 : status === "inactive" ? 1 : 0;
-    if (!current || rank(entry.status) > rank(current.status)
-      || (entry.lastActiveAt && (!current.lastActiveAt || entry.lastActiveAt > current.lastActiveAt))) {
-      grouped.set(entry.userId, entry);
-    }
-  });
-  return grouped;
-}
-
-function formatInactive(lastActiveAt) {
-  if (!lastActiveAt) return "Inativo";
-  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(lastActiveAt).getTime()) / 1000));
-  if (elapsed < 60) return "Inativo há menos de 1 minuto";
-  const minutes = Math.floor(elapsed / 60);
-  if (minutes < 60) return `Inativo há ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  return `Inativo há ${hours} h`;
-}
+import React, { useEffect, useMemo, useState } from "react";
+import { formatInactiveDuration, getPresenceStatus, groupPresenceByUser } from "../utils/sessionActivity.js";
 
 export default function SessionPage({ members = [], presence = {}, typing = {}, onBack }) {
-  const presenceByMember = useMemo(() => getPresenceByMember(presence), [presence]);
+  const [now, setNow] = useState(Date.now());
+  const presenceByMember = useMemo(() => groupPresenceByUser(presence), [presence]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
   const counts = useMemo(() => members.reduce((total, member) => {
-    const status = presenceByMember.get(member.userId)?.status ?? "offline";
+    const status = getPresenceStatus(member.userId, presenceByMember);
     total[status] = (total[status] ?? 0) + 1;
     return total;
   }, { online: 0, inactive: 0, offline: 0 }), [members, presenceByMember]);
@@ -53,10 +36,10 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
         <ul aria-label="Participantes da sessão" className="session-members-list">
           {members.map((member) => {
             const currentPresence = presenceByMember.get(member.userId);
-            const status = currentPresence?.status ?? "offline";
+            const status = getPresenceStatus(member.userId, presenceByMember);
             const typingInfo = typing[member.userId];
             const statusLabel = status === "online" ? "Online"
-              : status === "inactive" ? formatInactive(currentPresence?.lastActiveAt)
+              : status === "inactive" ? formatInactiveDuration(currentPresence?.lastActiveAt, now)
                 : "Offline";
             return (
               <li className="session-member-card" key={member.userId}>

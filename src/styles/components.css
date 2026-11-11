@@ -787,12 +787,12 @@
   .sidebar-navigation {
     grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
   }
 
   .sidebar-section-title { display: none; }
-  .sidebar-item { min-height: 42px; justify-content: center; gap: 7px; padding: 7px 5px; font-size: 0.74rem; }
+  .sidebar-item { min-height: 48px; flex-direction: column; justify-content: center; gap: 3px; padding: 6px 3px; text-align: center; font-size: 0.7rem; }
   .sidebar-item > span { width: auto; flex-basis: auto; font-size: 0.9rem; }
   .sidebar-item:hover { transform: none; }
 

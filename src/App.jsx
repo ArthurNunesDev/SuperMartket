@@ -368,6 +368,24 @@ export default function App() {
   }
 
   const participantNames = getSessionParticipantNames([...(activePurchase?.items ?? []), ...plannedItems]);
+  useEffect(() => {
+    if (!authorized || !session?.id || !deviceName || currentPage !== "session") return undefined;
+    let cancelled = false;
+    const refreshMembers = () => {
+      getSessionMembers().then((members) => {
+        if (!cancelled) setSessionMembers(members);
+      }).catch(() => {
+        if (!cancelled) setError("Não foi possível atualizar os participantes da sessão.");
+      });
+    };
+    refreshMembers();
+    const timer = setInterval(refreshMembers, 20_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [authorized, session?.id, deviceName, currentPage]);
+
   const showLoader = loading || accessStep === "loading" || refreshing || historyLoading || busy;
   const showNavigation = authorized && Boolean(deviceName) && accessStep === "ready";
 
