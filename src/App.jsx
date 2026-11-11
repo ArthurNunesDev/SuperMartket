@@ -275,6 +275,7 @@ export default function App() {
       setActivePurchase(null);
       setCompletedPurchases([]);
       setPlannedItems([]);
+      setEditingName(false);
       setCurrentPage("shopping");
       setAccessStep("session");
       setError("");
