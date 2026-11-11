@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { parseQuantity, formatQuantity } from "../utils/calculations.js";
-import { parseCurrency, formatCurrency } from "../utils/currency.js";
+import { parseQuantity, formatQuantity, sanitizeQuantityInput } from "../utils/calculations.js";
+import { parseCurrency, formatCurrency, sanitizeCurrencyInput } from "../utils/currency.js";
 
 export default function ShoppingListPage({ items, onSave, onDelete, activeAccount, busy, onBack }) {
   const [form, setForm] = useState({ name: "", quantity: "1", price: "" });
@@ -37,8 +37,8 @@ export default function ShoppingListPage({ items, onSave, onDelete, activeAccoun
       <form className="product-form planned-list-form" onSubmit={handleSubmit}>
         <div className="section-heading"><div><span className="eyebrow">NOVO ITEM</span><h2>O que falta comprar?</h2></div></div>
         <label className="field field-full"><span>Nome</span><input disabled={identityRequired || busy} maxLength={80} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="Ex.: Café" required value={form.name} /></label>
-        <label className="field field-full"><span>Quantidade</span><input disabled={identityRequired || busy} inputMode="decimal" onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))} required value={form.quantity} /></label>
-        <label className="field field-full"><span>Preço unitário (opcional)</span><div className="input-with-prefix"><span>R$</span><input disabled={identityRequired || busy} inputMode="decimal" onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="Se souber" value={form.price} /></div></label>
+        <label className="field field-full"><span>Quantidade</span><input disabled={identityRequired || busy} inputMode="decimal" maxLength={14} onChange={(event) => setForm((current) => ({ ...current, quantity: sanitizeQuantityInput(event.target.value) }))} required value={form.quantity} /></label>
+        <label className="field field-full"><span>Preço unitário (opcional)</span><div className="input-with-prefix"><span>R$</span><input disabled={identityRequired || busy} inputMode="decimal" maxLength={14} onChange={(event) => setForm((current) => ({ ...current, price: sanitizeCurrencyInput(event.target.value) }))} placeholder="Se souber" value={form.price} /></div></label>
         {error && <p className="form-error" role="alert">{error}</p>}
         <button className="primary-button form-submit" disabled={identityRequired || busy} type="submit">{busy ? "Salvando..." : "Adicionar à lista"}</button>
       </form>
