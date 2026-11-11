@@ -22,3 +22,20 @@ export function parseCurrency(value) {
 
   return Math.round(amount * 100);
 }
+
+export function sanitizeCurrencyInput(value) {
+  let normalized = String(value).replace(/[^0-9,.]/g, "");
+
+  if (normalized.includes(",")) {
+    normalized = normalized.replace(/\./g, "");
+  } else {
+    normalized = normalized.replace(/\./g, ",");
+  }
+
+  const separatorIndex = normalized.indexOf(",");
+  if (separatorIndex === -1) return normalized;
+
+  const integerPart = normalized.slice(0, separatorIndex);
+  const decimalPart = normalized.slice(separatorIndex + 1).replace(/,/g, "").slice(0, 2);
+  return `${integerPart},${decimalPart}`;
+}
