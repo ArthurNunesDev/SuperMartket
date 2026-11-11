@@ -2,16 +2,18 @@ import React, { useEffect, useState } from "react";
 import { parseQuantity, sanitizeQuantityInput } from "../utils/calculations.js";
 import { parseCurrency, sanitizeCurrencyInput } from "../utils/currency.js";
 import { subscribeToSharedItemEditHistory } from "../services/supabase.js";
+import { findDuplicateProduct } from "../utils/productMatching.js";
 
 const EMPTY_FORM = { name: "", quantity: "1", unitPrice: "" };
 
-export default function ProductForm({ product, onSave, onCancel, onGetEditHistory, onHistoryLoadingChange, activeAccount, busy, disabled = false }) {
+export default function ProductForm({ product, existingItems = [], onSave, onCancel, onGetEditHistory, onHistoryLoadingChange, activeAccount, busy, disabled = false }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [editHistory, setEditHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+  const [duplicateMatch, setDuplicateMatch] = useState(null);
 
   useEffect(() => {
     if (!product) {
@@ -93,19 +95,21 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
       return setError("Informe um preço válido de até R$ 21.474.836,47.");
     }
 
-    try {
-      await onSave({
-        ...(product ? { id: product.id } : {}),
-        name,
-        quantityMilli,
-        unit: "un",
-        unitPriceCents,
-      });
-      setForm(EMPTY_FORM);
-      setError("");
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Não foi possível salvar o produto. Tente novamente.");
+    const candidate = {
+      ...(product ? { id: product.id } : {}),
+      name,
+      quantityMilli,
+      unit: "un",
+      unitPriceCents,
+    };
+    if (!product) {
+      const match = findDuplicateProduct(existingItems, name);
+      if (match) {
+        setDuplicateMatch({ item: match.item, candidate });
+        return;
+      }
     }
+    await persistProduct(candidate);
   }
 
   return (
@@ -148,6 +152,21 @@ export default function ProductForm({ product, onSave, onCancel, onGetEditHistor
               </li>
             ))}</ol>}
         </section>
+      )}
+      {duplicateMatch && (
+        <div className="duplicate-backdrop" role="presentation">
+          <section aria-labelledby="duplicate-product-title" aria-modal="true" className="duplicate-dialog" role="dialog">
+            <span className="eyebrow">POSSÍVEL DUPLICIDADE</span>
+            <h3 id="duplicate-product-title">Este produto já está na compra</h3>
+            <p><strong>{duplicateMatch.item.name}</strong> já possui <strong>{(duplicateMatch.item.quantityMilli / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })}</strong> de quantidade.</p>
+            <p className="duplicate-detail">Você digitou “{duplicateMatch.candidate.name}”. Se somar, o preço unitário existente será mantido.</p>
+            <div className="duplicate-actions">
+              <button className="secondary-button" disabled={busy} onClick={() => setDuplicateMatch(null)} type="button">Revisar nome</button>
+              <button className="secondary-button" disabled={busy} onClick={() => confirmDuplicate("add")} type="button">Adicionar mesmo assim</button>
+              <button className="primary-button" disabled={busy} onClick={() => confirmDuplicate("sum")} type="button">Somar quantidade</button>
+            </div>
+          </section>
+        </div>
       )}
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="primary-button form-submit" disabled={busy || disabled || !activeAccount?.name} type="submit">
