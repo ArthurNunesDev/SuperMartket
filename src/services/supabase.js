@@ -283,7 +283,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
         lastActiveAt: new Date(lastActivityAt).toISOString(),
       });
     } catch (trackError) {
-      onError?.(trackError instanceof Error ? trackError : new Error("Não foi possível atualizar sua presença."));
+      if (active) onError?.(trackError instanceof Error ? trackError : new Error("Não foi possível atualizar sua presença."));
     }
   };
 
@@ -369,15 +369,17 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     .on("postgres_changes", { event: "*", schema: "public", table: "purchase_items" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "shopping_list_items" }, onChange)
     .on("presence", { event: "sync" }, () => {
-      if (active) onPresence?.(channel.presenceState());
+      if (!active) return;
+      onPresence?.(channel.presenceState());
       onRosterChange?.();
     })
-    .on("presence", { event: "join" }, () => onRosterChange?.())
-    .on("presence", { event: "leave" }, () => onRosterChange?.())
+    .on("presence", { event: "join" }, () => { if (active) onRosterChange?.(); })
+    .on("presence", { event: "leave" }, () => { if (active) onRosterChange?.(); })
     .on("broadcast", { event: "typing" }, ({ payload }) => {
       if (payload?.userId && payload.userId !== userId) onTyping?.(payload);
     })
     .subscribe((status, error) => {
+      if (!active) return;
       if (status === "SUBSCRIBED") {
         lastActivityAt = Date.now();
         trackStatus(document.visibilityState === "visible" ? "online" : "inactive", true);

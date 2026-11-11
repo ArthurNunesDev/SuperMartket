@@ -197,18 +197,23 @@ export default function App() {
 
   async function handleSubmitName(name) {
     const nextName = typeof name === "string" ? name.trim() : "";
-    if (!nextName || nextName.length > 50) { setAccessError("Informe um nome válido, com até 50 caracteres."); return; }
+    if (!nextName || nextName.length > 50 || busy) {
+      if (!nextName || nextName.length > 50) setAccessError("Informe um nome válido, com até 50 caracteres.");
+      return;
+    }
+    setBusy(true);
     try {
       localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
       if (session) await startSessionActivity(session, nextName);
+      setDeviceName(nextName);
+      setAccessError("");
+      setAccessStep("ready");
+      setCurrentPage("shopping");
     } catch (nameError) {
       setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível salvar seu nome.");
-      return;
+    } finally {
+      setBusy(false);
     }
-    setDeviceName(nextName);
-    setAccessError("");
-    setAccessStep("ready");
-    setCurrentPage("shopping");
   }
 
   function openNameEditor() {
@@ -220,23 +225,22 @@ export default function App() {
   async function saveDeviceName(event) {
     event.preventDefault();
     const nextName = nameDraft.trim();
-    if (!nextName || nextName.length > 50) {
-      setAccessError("Informe um nome válido, com até 50 caracteres.");
+    if (!nextName || nextName.length > 50 || busy) {
+      if (!nextName || nextName.length > 50) setAccessError("Informe um nome válido, com até 50 caracteres.");
       return;
     }
+    setBusy(true);
     try {
-      if (session) {
-        activityCleanupRef.current?.();
-        await startSessionActivity(session, nextName);
-      }
+      if (session) await startSessionActivity(session, nextName);
       localStorage.setItem(DEVICE_NAME_STORAGE_KEY, nextName);
+      setDeviceName(nextName);
+      setEditingName(false);
+      setAccessError("");
     } catch (nameError) {
       setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível atualizar seu nome.");
-      return;
+    } finally {
+      setBusy(false);
     }
-    setDeviceName(nextName);
-    setEditingName(false);
-    setAccessError("");
   }
 
   async function startPurchase() {
