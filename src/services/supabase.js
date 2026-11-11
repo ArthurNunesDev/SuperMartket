@@ -26,6 +26,12 @@ async function invokeShoppingSession(body) {
       const response = error.context;
       const payload = response instanceof Response ? await response.clone().json() : null;
       if (payload?.error) message = payload.error;
+      if (payload?.code) {
+        const sessionError = new Error(message);
+        sessionError.status = error.context?.status;
+        sessionError.code = payload.code;
+        throw sessionError;
+      }
     } catch {
       // Keep a safe generic error if the response cannot be parsed.
     }
