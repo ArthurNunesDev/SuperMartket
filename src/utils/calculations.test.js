@@ -5,6 +5,7 @@ import {
   calculatePurchaseTotal,
   formatQuantity,
   parseQuantity,
+  sanitizeQuantityInput,
 } from "./calculations.js";
 
 test("calculates a weighted product subtotal using integer cents", () => {
@@ -28,6 +29,12 @@ test("rejects invalid or non-positive quantities", () => {
   assert.equal(parseQuantity("-1"), null);
   assert.equal(parseQuantity("1,2345"), null);
   assert.equal(parseQuantity("abc"), null);
+});
+
+test("sanitizes quantity input and limits it to three decimal places", () => {
+  assert.equal(sanitizeQuantityInput("abc 2.5,6789"), "2,567");
+  assert.equal(sanitizeQuantityInput("1.234"), "1,234");
+  assert.equal(sanitizeQuantityInput("3kg"), "3");
 });
 
 test("formats fractional quantities for display", () => {

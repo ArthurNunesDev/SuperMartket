@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatCurrency, parseCurrency } from "./currency.js";
+import { formatCurrency, parseCurrency, sanitizeCurrencyInput } from "./currency.js";
 
 test("parses Brazilian currency values into integer cents", () => {
   assert.equal(parseCurrency("34,90"), 3490);
@@ -13,6 +13,12 @@ test("accepts zero and rejects invalid currency values", () => {
   assert.equal(parseCurrency("-1,00"), null);
   assert.equal(parseCurrency("12,999"), null);
   assert.equal(parseCurrency("abc"), null);
+});
+
+test("sanitizes currency input and limits it to two decimal places", () => {
+  assert.equal(sanitizeCurrencyInput("R$ 1.234,567"), "1234,56");
+  assert.equal(sanitizeCurrencyInput("12.5"), "12,5");
+  assert.equal(sanitizeCurrencyInput("abc 8"), "8");
 });
 
 test("formats integer cents as Brazilian currency", () => {

@@ -8,7 +8,7 @@ function offlineAppShell() {
     apply: "build",
     generateBundle(_, bundle) {
       const assets = Object.keys(bundle)
-        .filter((fileName) => /\\.(?:js|css)$/.test(fileName))
+        .filter((fileName) => /\.(?:js|css)$/.test(fileName))
         .map((fileName) => `${BASE_PATH}${fileName}`);
       const precacheUrls = [
         BASE_PATH,

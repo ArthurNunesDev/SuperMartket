@@ -73,11 +73,7 @@ export default function InstallPrompt() {
 
   if (installed || dismissed) return null;
 
-  const actionLabel = installEvent
-    ? "Instalar agora"
-    : appleDevice
-      ? "Como instalar"
-      : "Como instalar";
+  const actionLabel = installEvent ? "Instalar agora" : "Como instalar";
 
   return (
     <aside className="install-prompt" aria-label="Instalar SuperMartket">
