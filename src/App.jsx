@@ -4,6 +4,7 @@ import ShoppingPage from "./pages/ShoppingPage.jsx";
 import ShoppingListPage from "./pages/ShoppingListPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
+import { getSessionParticipantNames } from "./utils/itemFilters.js";
 import {
   checkShoppingSession, completeSharedPurchase, createSharedPurchase, createShoppingSession,
   deleteSharedItem, deleteShoppingListItem, ensureDeviceSession, getSharedPurchases,
@@ -290,6 +291,7 @@ export default function App() {
     } finally { setBusy(false); }
   }
 
+  const participantNames = getSessionParticipantNames([...(activePurchase?.items ?? []), ...plannedItems]);
   const showLoader = loading || accessStep === "loading" || refreshing || historyLoading || busy;
   const showNavigation = authorized && Boolean(deviceName) && accessStep === "ready";
 
@@ -389,9 +391,9 @@ export default function App() {
           : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
           : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
           : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
-          : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} onSave={savePlannedItem} onDelete={deletePlannedItem}
+          : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} participantNames={participantNames} onSave={savePlannedItem} onDelete={deletePlannedItem}
               activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
-          : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
+          : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} participantNames={participantNames} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
               onFinish={finishPurchase} onStart={startPurchase} onPurchasePlannedItem={purchasePlannedItem}
               onGetEditHistory={getSharedItemEditHistory} onHistoryLoadingChange={handleHistoryLoadingChange}
               activeAccount={{ name: deviceName }} busy={busy} />}
