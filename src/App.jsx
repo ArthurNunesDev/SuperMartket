@@ -79,7 +79,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#111a15" : "#f4f7f5");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#111827" : "#f4f7f5");
     try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* Keep theme for this visit. */ }
   }, [theme]);
 
