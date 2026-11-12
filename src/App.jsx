@@ -6,6 +6,7 @@ import HistoryPage from "./pages/HistoryPage.jsx";
 import AccessPage from "./pages/AccessPage.jsx";
 import SessionPage from "./pages/SessionPage.jsx";
 import { getSessionParticipantNames } from "./utils/itemFilters.js";
+import { readCurrentPage, writeCurrentPage, writeLocationSharingPreference } from "./utils/sessionPersistence.js";
 import {
   checkShoppingSession, completeSharedPurchase, createSharedPurchase, createShoppingSession,
   deleteSharedItem, deleteShoppingListItem, ensureDeviceSession, getSharedPurchases,
@@ -40,7 +41,10 @@ export default function App() {
   const [completedPurchases, setCompletedPurchases] = useState([]);
   const [plannedItems, setPlannedItems] = useState([]);
   const [session, setSession] = useState(null);
-  const [currentPage, setCurrentPage] = useState("shopping");
+  const [currentPage, setCurrentPage] = useState(() => {
+    try { return readCurrentPage(window.sessionStorage); }
+    catch { return "shopping"; }
+  });
   const [accessStep, setAccessStep] = useState("loading");
   const [authorized, setAuthorized] = useState(false);
   const [deviceName, setDeviceName] = useState(getStoredDeviceName);
@@ -75,6 +79,13 @@ export default function App() {
       refreshCountRef.current -= 1;
       setRefreshing(refreshCountRef.current > 0);
     }
+  }, []);
+
+  const navigateToPage = useCallback((page) => {
+    if (page !== "session") {
+      try { writeLocationSharingPreference(false, window.sessionStorage); } catch { /* Storage may be unavailable. */ }
+    }
+    setCurrentPage(page);
   }, []);
 
   const handleHistoryLoadingChange = useCallback((isLoading) => setHistoryLoading(isLoading), []);
@@ -156,6 +167,10 @@ export default function App() {
   }, [refreshPurchases, startSessionActivity]);
 
   useEffect(() => {
+    try { writeCurrentPage(currentPage, window.sessionStorage); } catch { /* Keep navigation functional without storage. */ }
+  }, [currentPage]);
+
+  useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#111827" : "#f4f7f5");
     try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* Keep theme for this visit. */ }
@@ -213,7 +228,7 @@ export default function App() {
     try {
       const nextSession = await action();
       await activateSession(nextSession);
-      setCurrentPage("shopping");
+      navigateToPage("shopping");
       setError("");
     } catch (actionError) {
       setAccessError(actionError instanceof Error ? actionError.message : "Não foi possível acessar a sessão.");
@@ -294,7 +309,7 @@ export default function App() {
       setDeviceName(nextName);
       setAccessError("");
       setAccessStep("ready");
-      setCurrentPage("shopping");
+      navigateToPage("shopping");
     } catch (nameError) {
       setAccessError(nameError instanceof Error ? nameError.message : "Não foi possível salvar seu nome.");
     } finally {
@@ -335,7 +350,7 @@ export default function App() {
     try {
       await createSharedPurchase();
       await refreshPurchases();
-      setCurrentPage("shopping");
+      navigateToPage("shopping");
       setError("");
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : "Não foi possível iniciar uma compra.");
@@ -379,7 +394,7 @@ export default function App() {
     try {
       await completeSharedPurchase(activePurchase.id);
       await refreshPurchases();
-      setCurrentPage("history");
+      navigateToPage("history");
       setError("");
     } catch (finishError) {
       setError(finishError instanceof Error ? finishError.message : "Não foi possível finalizar a compra.");
@@ -432,7 +447,7 @@ export default function App() {
       setActivePurchase(null);
       setCompletedPurchases([]);
       setPlannedItems([]);
-      setCurrentPage("shopping");
+      navigateToPage("shopping");
       setAccessStep("session");
       setError("");
       setAccessError("");
@@ -474,7 +489,7 @@ export default function App() {
       <header className="app-header">
         <a className="brand" href="/" onClick={(event) => {
           event.preventDefault();
-          setCurrentPage("shopping");
+          navigateToPage("shopping");
         }}>
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>SuperMartket</span>
@@ -541,7 +556,7 @@ export default function App() {
             <button
               aria-current={currentPage === "shopping" ? "page" : undefined}
               className={currentPage === "shopping" ? "sidebar-item active" : "sidebar-item"}
-              onClick={() => setCurrentPage("shopping")}
+              onClick={() => navigateToPage("shopping")}
               type="button"
             >
               <span aria-hidden="true">🛒</span>
@@ -550,7 +565,7 @@ export default function App() {
             <button
               aria-current={currentPage === "planned" ? "page" : undefined}
               className={currentPage === "planned" ? "sidebar-item active" : "sidebar-item"}
-              onClick={() => setCurrentPage("planned")}
+              onClick={() => navigateToPage("planned")}
               type="button"
             >
               <span aria-hidden="true">📝</span>
@@ -559,7 +574,7 @@ export default function App() {
             <button
               aria-current={currentPage === "history" ? "page" : undefined}
               className={currentPage === "history" ? "sidebar-item active" : "sidebar-item"}
-              onClick={() => setCurrentPage("history")}
+              onClick={() => navigateToPage("history")}
               type="button"
             >
               <span aria-hidden="true">📋</span>
@@ -568,7 +583,7 @@ export default function App() {
             <button
               aria-current={currentPage === "session" ? "page" : undefined}
               className={currentPage === "session" ? "sidebar-item active" : "sidebar-item"}
-              onClick={() => setCurrentPage("session")}
+              onClick={() => navigateToPage("session")}
               type="button"
             >
               <span aria-hidden="true">👥</span>
@@ -598,10 +613,10 @@ export default function App() {
           : accessStep === "error" ? <main className="page-content"><div className="empty-state"><h3>Não foi possível conectar</h3><p>Verifique a conexão e recarregue a página.</p></div></main>
           : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
           : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
-          : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
-          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} typing={typingMembers} onLocationChange={handleLocationChange} onBack={() => setCurrentPage("shopping")} />
+          : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => navigateToPage("shopping")} />
+          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} typing={typingMembers} onLocationChange={handleLocationChange} onBack={() => navigateToPage("shopping")} />
           : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} participantNames={participantNames} onSave={savePlannedItem} onDelete={deletePlannedItem}
-              activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
+              activeAccount={{ name: deviceName }} busy={busy} onBack={() => navigateToPage("shopping")} />
           : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} participantNames={participantNames} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
               onFinish={finishPurchase} onStart={startPurchase} onPurchasePlannedItem={purchasePlannedItem}
               onGetEditHistory={getSharedItemEditHistory} onHistoryLoadingChange={handleHistoryLoadingChange}
