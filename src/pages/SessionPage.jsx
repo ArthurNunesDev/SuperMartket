@@ -23,7 +23,7 @@ function getGeolocationErrorMessage(error) {
   return "Não foi possível acessar sua localização. O compartilhamento foi interrompido.";
 }
 
-export default function SessionPage({ members = [], presence = {}, typing = {}, onLocationChange, onBack }) {
+export default function SessionPage({ members = [], presence = {}, locations = {}, typing = {}, onLocationChange, onBack }) {
   const [now, setNow] = useState(Date.now());
   const [sharingLocation, setSharingLocation] = useState(getInitialLocationSharing);
   const [locationStatus, setLocationStatus] = useState("idle");
@@ -149,10 +149,10 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
   }, [sharingLocation, onLocationChange]);
 
   const mapLocations = useMemo(() => members.flatMap((member) => {
-    const location = presenceByMember.get(member.userId)?.location;
+    const location = locations[member.userId];
     if (!isValidLocation(location) || now - Date.parse(location.updatedAt) > LOCATION_STALE_AFTER_MS) return [];
-    return [{ ...location, userId: member.userId, name: member.name || "Participante" }];
-  }), [members, presenceByMember, now]);
+    return [{ ...location, userId: member.userId, name: member.name || location.name || "Participante" }];
+  }), [members, locations, now]);
 
   const counts = useMemo(() => members.reduce((total, member) => {
     const status = getPresenceStatus(member.userId, presenceByMember);
