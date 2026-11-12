@@ -78,6 +78,9 @@ export default function App() {
   }, []);
 
   const handleHistoryLoadingChange = useCallback((isLoading) => setHistoryLoading(isLoading), []);
+  const handleLocationChange = useCallback((location) => {
+    activityCleanupRef.current?.setLocation?.(location);
+  }, []);
 
   const startSessionActivity = useCallback(async (nextSession, memberName) => {
     if (!nextSession?.id || !memberName) return;
@@ -596,7 +599,7 @@ export default function App() {
           : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
           : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
           : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => setCurrentPage("shopping")} />
-          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} typing={typingMembers} onBack={() => setCurrentPage("shopping")} />
+          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} typing={typingMembers} onLocationChange={handleLocationChange} onBack={() => setCurrentPage("shopping")} />
           : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} participantNames={participantNames} onSave={savePlannedItem} onDelete={deletePlannedItem}
               activeAccount={{ name: deviceName }} busy={busy} onBack={() => setCurrentPage("shopping")} />
           : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} participantNames={participantNames} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
