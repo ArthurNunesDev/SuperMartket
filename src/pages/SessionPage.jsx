@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import SessionLocationMap from "../components/SessionLocationMap.jsx";
 import { isValidLocation, normalizeGeolocationPosition, shouldPublishLocation } from "../utils/locationSharing.js";
 import { formatInactiveDuration, getPresenceStatus, groupPresenceByUser } from "../utils/sessionActivity.js";
+import { getLatestSessionLocation } from "../utils/sessionLocations.js";
 import { readLocationSharingPreference, writeLocationSharingPreference } from "../utils/sessionPersistence.js";
 
 const LOCATION_STALE_AFTER_MS = 90_000;
@@ -149,7 +150,7 @@ export default function SessionPage({ members = [], presence = {}, locations = {
   }, [sharingLocation, onLocationChange]);
 
   const mapLocations = useMemo(() => members.flatMap((member) => {
-    const location = locations[member.userId];
+    const location = getLatestSessionLocation(locations[member.userId]);
     if (!isValidLocation(location) || now - Date.parse(location.updatedAt) > LOCATION_STALE_AFTER_MS) return [];
     return [{ ...location, userId: member.userId, name: member.name || location.name || "Participante" }];
   }), [members, locations, now]);
