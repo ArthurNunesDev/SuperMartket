@@ -17,6 +17,7 @@
   --surface: #ffffff;
   --danger: #b54747;
   --shadow: 0 12px 32px rgba(27, 58, 43, 0.06);
+  --page-background: #f4f7f5;
   color-scheme: light;
 }
 
@@ -32,6 +33,7 @@
   --surface: #1e293b;
   --danger: #ff9292;
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  --page-background: #111827;
   color-scheme: dark;
 }
 
@@ -41,7 +43,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: inherit;
+  background: var(--page-background);
 }
 
 button, input, select { font: inherit; }
