@@ -2,8 +2,19 @@ import React, { useEffect, useMemo, useState } from "react";
 import SessionLocationMap from "../components/SessionLocationMap.jsx";
 import { isValidLocation, normalizeGeolocationPosition, shouldPublishLocation } from "../utils/locationSharing.js";
 import { formatInactiveDuration, getPresenceStatus, groupPresenceByUser } from "../utils/sessionActivity.js";
+import { readLocationSharingPreference, writeLocationSharingPreference } from "../utils/sessionPersistence.js";
 
 const LOCATION_STALE_AFTER_MS = 90_000;
+
+function getInitialLocationSharing() {
+  try { return readLocationSharingPreference(window.sessionStorage); }
+  catch { return false; }
+}
+
+function persistLocationSharing(isSharing) {
+  try { writeLocationSharingPreference(isSharing, window.sessionStorage); }
+  catch { /* Sharing remains available for the current page. */ }
+}
 
 function getGeolocationErrorMessage(error) {
   if (error?.code === 1) return "Permissão de localização negada. Autorize o acesso nas configurações do navegador.";
@@ -14,7 +25,7 @@ function getGeolocationErrorMessage(error) {
 
 export default function SessionPage({ members = [], presence = {}, typing = {}, onLocationChange, onBack }) {
   const [now, setNow] = useState(Date.now());
-  const [sharingLocation, setSharingLocation] = useState(false);
+  const [sharingLocation, setSharingLocation] = useState(getInitialLocationSharing);
   const [locationStatus, setLocationStatus] = useState("idle");
   const [locationMessage, setLocationMessage] = useState("");
   const presenceByMember = useMemo(() => groupPresenceByUser(presence), [presence]);
@@ -31,6 +42,7 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
     }
 
     if (!navigator.geolocation) {
+      persistLocationSharing(false);
       setLocationStatus("error");
       setLocationMessage("Este navegador não oferece suporte à geolocalização.");
       setSharingLocation(false);
@@ -39,6 +51,7 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
     }
 
     if (!window.isSecureContext) {
+      persistLocationSharing(false);
       setLocationStatus("error");
       setLocationMessage("A localização exige uma conexão segura (HTTPS).");
       setSharingLocation(false);
@@ -87,6 +100,7 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
             if (!active || !visible || failed) return;
             failed = true;
             stopWatching();
+            persistLocationSharing(false);
             setLocationStatus("error");
             setLocationMessage(getGeolocationErrorMessage(geolocationError));
             setSharingLocation(false);
@@ -96,6 +110,7 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
       } catch {
         failed = true;
         stopWatching();
+        persistLocationSharing(false);
         setLocationStatus("error");
         setLocationMessage("Não foi possível iniciar o compartilhamento de localização.");
         setSharingLocation(false);
@@ -176,11 +191,13 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
             className={sharingLocation ? "session-location-toggle active" : "session-location-toggle"}
             onClick={() => {
               if (sharingLocation) {
+                persistLocationSharing(false);
                 setSharingLocation(false);
                 setLocationStatus("idle");
                 setLocationMessage("Você parou de compartilhar sua localização.");
                 return;
               }
+              persistLocationSharing(true);
               setLocationMessage("Obtendo sua localização...");
               setLocationStatus("requesting");
               setSharingLocation(true);
