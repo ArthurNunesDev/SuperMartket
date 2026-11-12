@@ -141,8 +141,8 @@ export default function App() {
         refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
       },
       (activityError) => setError(activityError.message),
-      (locationUserId, location, locationName) => {
-        setLocationState((current) => applySessionLocationUpdate(current, locationUserId, location, locationName));
+      (locationUserId, location, locationName, tabId) => {
+        setLocationState((current) => applySessionLocationUpdate(current, locationUserId, location, locationName, tabId));
       },
     );
   }, [refreshPurchases]);
