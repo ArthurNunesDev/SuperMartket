@@ -7,6 +7,7 @@ import AccessPage from "./pages/AccessPage.jsx";
 import SessionPage from "./pages/SessionPage.jsx";
 import { getSessionParticipantNames } from "./utils/itemFilters.js";
 import { readCurrentPage, writeCurrentPage, writeLocationSharingPreference } from "./utils/sessionPersistence.js";
+import { applySessionLocationUpdate } from "./utils/sessionLocations.js";
 import {
   checkShoppingSession, completeSharedPurchase, createSharedPurchase, createShoppingSession,
   deleteSharedItem, deleteShoppingListItem, ensureDeviceSession, getSharedPurchases,
@@ -141,12 +142,7 @@ export default function App() {
       },
       (activityError) => setError(activityError.message),
       (locationUserId, location, locationName) => {
-        setLocationState((current) => {
-          const next = { ...current };
-          if (!location) delete next[locationUserId];
-          else next[locationUserId] = { ...location, name: locationName };
-          return next;
-        });
+        setLocationState((current) => applySessionLocationUpdate(current, locationUserId, location, locationName));
       },
     );
   }, [refreshPurchases]);
