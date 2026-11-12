@@ -256,6 +256,7 @@ export async function getCurrentUserId() {
 
 export function subscribeToSessionActivity(sessionId, userId, name, onPresence, onTyping, onRosterChange, onChange, onError) {
   let active = true;
+  let subscribed = false;
   let currentStatus = document.visibilityState === "visible" ? "online" : "inactive";
   let lastActivityAt = Date.now();
   let inactivityTimer = null;
@@ -263,6 +264,9 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   let typing = false;
   let lastTypingField = "";
   let currentLocation = null;
+  let trackRequested = false;
+  let trackInProgress = false;
+  let trackBlocked = false;
 
   const channel = supabase.channel(`session:${sessionId}`, {
     config: {
@@ -271,26 +275,68 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     },
   });
 
-  const trackStatus = async (status, force = false) => {
+  const reportPresenceError = (error, fallbackMessage) => {
+    const message = typeof error === "string"
+      ? error
+      : typeof error?.message === "string" && error.message.trim()
+        ? error.message
+        : fallbackMessage;
+    onError?.(new Error(message));
+  };
+
+  const flushPresence = async () => {
+    if (!active || !subscribed || trackInProgress || trackBlocked || !trackRequested) return;
+
+    trackInProgress = true;
+    try {
+      while (active && subscribed && trackRequested) {
+        trackRequested = false;
+        const payload = {
+          userId,
+          name,
+          status: currentStatus,
+          lastActiveAt: new Date(lastActivityAt).toISOString(),
+          location: currentLocation,
+        };
+
+        const result = await channel.track(payload);
+        if (!active) return;
+        if (result !== "ok") {
+          trackRequested = true;
+          trackBlocked = true;
+          reportPresenceError(null, "Não foi possível atualizar sua presença. A conexão será sincronizada novamente.");
+          break;
+        }
+      }
+    } catch (trackError) {
+      trackRequested = true;
+      trackBlocked = true;
+      if (active) reportPresenceError(trackError, "Não foi possível atualizar sua presença.");
+    } finally {
+      trackInProgress = false;
+      if (active && subscribed && trackRequested && !trackBlocked) {
+        queueMicrotask(() => { void flushPresence(); });
+      }
+    }
+  };
+
+  const requestPresenceUpdate = () => {
+    if (!active) return;
+    trackRequested = true;
+    trackBlocked = false;
+    if (subscribed) void flushPresence();
+  };
+
+  const trackStatus = (status, force = false) => {
     if (!active || (!force && status === currentStatus)) return;
     currentStatus = status;
-    try {
-      await channel.track({
-        userId,
-        name,
-        status,
-        lastActiveAt: new Date(lastActivityAt).toISOString(),
-        location: currentLocation,
-      });
-    } catch (trackError) {
-      if (active) onError?.(trackError instanceof Error ? trackError : new Error("Não foi possível atualizar sua presença."));
-    }
+    requestPresenceUpdate();
   };
 
   const setLocation = (location) => {
     if (!active) return;
     currentLocation = location;
-    trackStatus(currentStatus, true);
+    requestPresenceUpdate();
   };
 
   const stopTyping = () => {
@@ -388,11 +434,18 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     .subscribe((status, error) => {
       if (!active) return;
       if (status === "SUBSCRIBED") {
+        subscribed = true;
+        trackBlocked = false;
         lastActivityAt = Date.now();
-        trackStatus(document.visibilityState === "visible" ? "online" : "inactive", true);
+        currentStatus = document.visibilityState === "visible" ? "online" : "inactive";
+        requestPresenceUpdate();
         scheduleInactivity();
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-        onError?.(error instanceof Error ? error : new Error("A conexão de presença foi interrompida."));
+        subscribed = false;
+        reportPresenceError(
+          error,
+          `A conexão de presença foi interrompida (${status}).`,
+        );
       }
     });
 
@@ -400,6 +453,8 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
 
   const cleanup = () => {
     active = false;
+    subscribed = false;
+    trackRequested = false;
     if (inactivityTimer) clearTimeout(inactivityTimer);
     if (typingTimer) clearTimeout(typingTimer);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
