@@ -251,7 +251,8 @@ export default function App() {
   async function handleShareSession() {
     if (!session?.pin) return;
     const appUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
-    const shareText = `Entre na minha sessão do SuperMartket:\n\n${appUrl}\nPIN: ${session.pin}`;
+    const shareText = `Entre na minha sessão do SuperMartket. PIN: ${session.pin}`;
+    const fallbackMessage = `${shareText}\n\n${appUrl}`;
 
     try {
       if (typeof navigator.share === "function") {
@@ -264,12 +265,12 @@ export default function App() {
         return;
       }
 
-      await copyToClipboard(shareText);
+      await copyToClipboard(fallbackMessage);
       setSessionFeedback("Convite copiado! Agora é só enviar.");
     } catch (shareError) {
       if (shareError?.name === "AbortError") return;
       try {
-        await copyToClipboard(shareText);
+        await copyToClipboard(fallbackMessage);
         setSessionFeedback("Não foi possível abrir o compartilhamento. Convite copiado!");
       } catch {
         setSessionFeedback("Não foi possível compartilhar o convite.");
