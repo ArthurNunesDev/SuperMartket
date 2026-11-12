@@ -262,6 +262,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   let typingTimer = null;
   let typing = false;
   let lastTypingField = "";
+  let currentLocation = null;
 
   const channel = supabase.channel(`session:${sessionId}`, {
     config: {
@@ -279,10 +280,17 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
         name,
         status,
         lastActiveAt: new Date(lastActivityAt).toISOString(),
+        location: currentLocation,
       });
     } catch (trackError) {
       if (active) onError?.(trackError instanceof Error ? trackError : new Error("Não foi possível atualizar sua presença."));
     }
+  };
+
+  const setLocation = (location) => {
+    if (!active) return;
+    currentLocation = location;
+    trackStatus(currentStatus, true);
   };
 
   const stopTyping = () => {
@@ -390,7 +398,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
 
   scheduleInactivity();
 
-  return () => {
+  const cleanup = () => {
     active = false;
     if (inactivityTimer) clearTimeout(inactivityTimer);
     if (typingTimer) clearTimeout(typingTimer);
@@ -404,4 +412,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     channel.untrack().catch(() => {});
     supabase.removeChannel(channel);
   };
+
+  cleanup.setLocation = setLocation;
+  return cleanup;
 }
