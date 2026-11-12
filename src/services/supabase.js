@@ -254,7 +254,7 @@ export async function getCurrentUserId() {
   return data.user.id;
 }
 
-export function subscribeToSessionActivity(sessionId, userId, name, onPresence, onTyping, onRosterChange, onChange, onError) {
+export function subscribeToSessionActivity(sessionId, userId, name, onPresence, onTyping, onRosterChange, onChange, onError, onLocation) {
   let active = true;
   let subscribed = false;
   let currentStatus = document.visibilityState === "visible" ? "online" : "inactive";
@@ -263,10 +263,14 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   let typingTimer = null;
   let typing = false;
   let lastTypingField = "";
-  let currentLocation = null;
   let trackRequested = false;
   let trackInProgress = false;
   let trackBlocked = false;
+
+  let currentLocation = null;
+  let locationSubscribed = false;
+  let locationSendQueue = Promise.resolve();
+  let locationHeartbeat = null;
 
   const channel = supabase.channel(`session:${sessionId}`, {
     config: {
@@ -274,6 +278,27 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
       presence: { key: `tab:${crypto.randomUUID()}` },
     },
   });
+
+  const locationChannel = supabase.channel(`session-location:${sessionId}`, {
+    config: { private: true, broadcast: { self: true } },
+  });
+
+  const sendLocation = (location) => {
+    if (!active || !locationSubscribed) return;
+    const payload = { userId, name, location };
+    locationSendQueue = locationSendQueue
+      .catch(() => {})
+      .then(async () => {
+        if (!active || !locationSubscribed) return;
+        const result = await locationChannel.send({ type: "broadcast", event: "location_update", payload });
+        if (result !== "ok" && active) {
+          onError?.(new Error("Não foi possível transmitir a localização. A conexão será sincronizada novamente."));
+        }
+      })
+      .catch((error) => {
+        if (active) onError?.(error instanceof Error ? error : new Error("Falha ao transmitir a localização."));
+      });
+  };
 
   const reportPresenceError = (error, fallbackMessage) => {
     const message = typeof error === "string"
@@ -296,7 +321,6 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
           name,
           status: currentStatus,
           lastActiveAt: new Date(lastActivityAt).toISOString(),
-          location: currentLocation,
         };
 
         const result = await channel.track(payload);
@@ -336,7 +360,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   const setLocation = (location) => {
     if (!active) return;
     currentLocation = location;
-    requestPresenceUpdate();
+    sendLocation(location);
   };
 
   const stopTyping = () => {
@@ -449,12 +473,32 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
       }
     });
 
+  locationChannel
+    .on("broadcast", { event: "location_update" }, ({ payload }) => {
+      if (!active || !payload?.userId) return;
+      onLocation?.(payload.userId, payload.location ?? null, payload.name ?? "Participante");
+    })
+    .subscribe((status, error) => {
+      if (!active) return;
+      if (status === "SUBSCRIBED") {
+        locationSubscribed = true;
+        if (locationHeartbeat) clearInterval(locationHeartbeat);
+        sendLocation(currentLocation);
+        locationHeartbeat = setInterval(() => sendLocation(currentLocation), 30_000);
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        locationSubscribed = false;
+        onError?.(new Error(error?.message || `A conexão de localização foi interrompida (${status}).`));
+      }
+    });
+
   scheduleInactivity();
 
   const cleanup = () => {
     active = false;
     subscribed = false;
     trackRequested = false;
+    locationSubscribed = false;
+    if (locationHeartbeat) clearInterval(locationHeartbeat);
     if (inactivityTimer) clearTimeout(inactivityTimer);
     if (typingTimer) clearTimeout(typingTimer);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -466,6 +510,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     document.removeEventListener("touchstart", handleInteraction);
     channel.untrack().catch(() => {});
     supabase.removeChannel(channel);
+    supabase.removeChannel(locationChannel);
   };
 
   cleanup.setLocation = setLocation;
