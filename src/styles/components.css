@@ -978,14 +978,6 @@
   line-height: 1.45;
 }
 
-.product-author {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 550;
-}
-
 :root[data-theme="dark"] .account-select {
   border-color: var(--line);
   color: var(--ink);
@@ -1516,7 +1508,6 @@
 .session-confirm-actions { display: grid; gap: 9px; margin-top: 20px; }
 .secondary-button,
 .danger-button { min-height: 43px; padding: 0 14px; border: 0; border-radius: 10px; font-size: .8rem; font-weight: 750; }
-.secondary-button { color: var(--ink); background: var(--green-soft); }
 .danger-button { color: #fff; background: #b54747; }
 .danger-button:hover:not(:disabled) { background: #963838; }
 :root[data-theme="dark"] .planned-price-field .input-with-prefix { border-color: var(--line); background: #182235; }
