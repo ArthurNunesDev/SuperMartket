@@ -7,6 +7,7 @@ import AccessPage from "./pages/AccessPage.jsx";
 import SessionPage from "./pages/SessionPage.jsx";
 import { getSessionParticipantNames } from "./utils/itemFilters.js";
 import { readCurrentPage, writeCurrentPage, writeLocationSharingPreference } from "./utils/sessionPersistence.js";
+import { applySessionLocationUpdate } from "./utils/sessionLocations.js";
 import {
   checkShoppingSession, completeSharedPurchase, createSharedPurchase, createShoppingSession,
   deleteSharedItem, deleteShoppingListItem, ensureDeviceSession, getSharedPurchases,
@@ -61,6 +62,7 @@ export default function App() {
   const [sessionMembers, setSessionMembers] = useState([]);
   const [sessionFeedback, setSessionFeedback] = useState("");
   const [presenceState, setPresenceState] = useState({});
+  const [locationState, setLocationState] = useState({});
   const [typingMembers, setTypingMembers] = useState({});
   const refreshCountRef = useRef(0);
   const activityCleanupRef = useRef(null);
@@ -139,6 +141,9 @@ export default function App() {
         refreshPurchases().catch(() => setError("Não foi possível atualizar os dados da sessão."));
       },
       (activityError) => setError(activityError.message),
+      (locationUserId, location, locationName, tabId) => {
+        setLocationState((current) => applySessionLocationUpdate(current, locationUserId, location, locationName, tabId));
+      },
     );
   }, [refreshPurchases]);
 
@@ -439,6 +444,7 @@ export default function App() {
       activityCleanupRef.current = null;
       setSessionMembers([]);
       setPresenceState({});
+      setLocationState({});
       setTypingMembers({});
       typingTimersRef.current.forEach((timer) => clearTimeout(timer));
       typingTimersRef.current.clear();
@@ -614,7 +620,7 @@ export default function App() {
           : !authorized || accessStep === "session" ? <AccessPage step="session" onCreateSession={handleCreateSession} onSubmitPin={handleSubmitPin} error={accessError} busy={busy} />
           : accessStep === "name" || !deviceName ? <AccessPage step="name" onSubmitName={handleSubmitName} error={accessError} busy={busy} />
           : currentPage === "history" ? <HistoryPage purchases={completedPurchases} onBack={() => navigateToPage("shopping")} />
-          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} typing={typingMembers} onLocationChange={handleLocationChange} onBack={() => navigateToPage("shopping")} />
+          : currentPage === "session" ? <SessionPage members={sessionMembers} presence={presenceState} locations={locationState} typing={typingMembers} onLocationChange={handleLocationChange} onBack={() => navigateToPage("shopping")} />
           : currentPage === "planned" ? <ShoppingListPage items={plannedItems} purchases={completedPurchases} participantNames={participantNames} onSave={savePlannedItem} onDelete={deletePlannedItem}
               activeAccount={{ name: deviceName }} busy={busy} onBack={() => navigateToPage("shopping")} />
           : <ShoppingPage purchase={activePurchase} plannedItems={plannedItems} participantNames={participantNames} onSaveProduct={saveProduct} onDeleteProduct={deleteProduct}
