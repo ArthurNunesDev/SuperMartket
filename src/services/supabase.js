@@ -490,7 +490,9 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
         locationSubscribed = true;
         if (locationHeartbeat) clearInterval(locationHeartbeat);
         sendLocation(currentLocation);
-        locationHeartbeat = setInterval(() => sendLocation(currentLocation), 30_000);
+        locationHeartbeat = setInterval(() => {
+          if (currentLocation) sendLocation(currentLocation);
+        }, 30_000);
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
         locationSubscribed = false;
         onError?.(new Error(error?.message || `A conexão de localização foi interrompida (${status}).`));
