@@ -268,6 +268,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   let trackBlocked = false;
 
   let currentLocation = null;
+  const locationTabId = crypto.randomUUID();
   let locationSubscribed = false;
   let locationSendQueue = Promise.resolve();
   let locationHeartbeat = null;
@@ -287,6 +288,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
     if (!active || !locationSubscribed) return;
     const payload = {
       userId,
+      tabId: locationTabId,
       name,
       location: location ? { ...location, updatedAt: new Date().toISOString() } : null,
     };
@@ -480,7 +482,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   locationChannel
     .on("broadcast", { event: "location_update" }, ({ payload }) => {
       if (!active || !payload?.userId) return;
-      onLocation?.(payload.userId, payload.location ?? null, payload.name ?? "Participante");
+      onLocation?.(payload.userId, payload.location ?? null, payload.name ?? "Participante", payload.tabId ?? "default");
     })
     .subscribe((status, error) => {
       if (!active) return;
