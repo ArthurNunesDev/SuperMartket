@@ -2,12 +2,30 @@ export function groupPresenceByUser(presence = {}) {
   const grouped = new Map();
   Object.values(presence).flat().forEach((entry) => {
     if (!entry?.userId) return;
+
     const current = grouped.get(entry.userId);
-    const priority = (status) => status === "online" ? 2 : status === "inactive" ? 1 : 0;
-    if (!current || priority(entry.status) > priority(current.status)) grouped.set(entry.userId, entry);
-    else if (entry.lastActiveAt && (!current.lastActiveAt || entry.lastActiveAt > current.lastActiveAt)) {
-      grouped.set(entry.userId, { ...current, lastActiveAt: entry.lastActiveAt });
+    if (!current) {
+      grouped.set(entry.userId, entry);
+      return;
     }
+
+    const priority = (status) => status === "online" ? 2 : status === "inactive" ? 1 : 0;
+    const preferred = priority(entry.status) > priority(current.status)
+      || (priority(entry.status) === priority(current.status)
+        && Date.parse(entry.lastActiveAt ?? "") > Date.parse(current.lastActiveAt ?? ""))
+      ? entry
+      : current;
+
+    const currentLocationTime = Date.parse(current.location?.updatedAt ?? "");
+    const nextLocationTime = Date.parse(entry.location?.updatedAt ?? "");
+    const latestLocation = entry.location && (
+      !current.location || nextLocationTime >= currentLocationTime
+    ) ? entry.location : current.location;
+
+    grouped.set(entry.userId, {
+      ...preferred,
+      location: latestLocation ?? null,
+    });
   });
   return grouped;
 }
