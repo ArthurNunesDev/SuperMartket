@@ -12,11 +12,13 @@ to authenticated
 using (
   (
     realtime.messages.extension in ('broadcast', 'presence')
+    and (select private.current_shopping_session_id()) is not null
     and (select realtime.topic()) = 'session:' || (select private.current_shopping_session_id())::text
   )
   or
   (
     realtime.messages.extension = 'broadcast'
+    and (select private.current_shopping_session_id()) is not null
     and (select realtime.topic()) = 'session-location:' || (select private.current_shopping_session_id())::text
   )
 );
@@ -28,11 +30,13 @@ to authenticated
 with check (
   (
     realtime.messages.extension in ('broadcast', 'presence')
+    and (select private.current_shopping_session_id()) is not null
     and (select realtime.topic()) = 'session:' || (select private.current_shopping_session_id())::text
   )
   or
   (
     realtime.messages.extension = 'broadcast'
+    and (select private.current_shopping_session_id()) is not null
     and (select realtime.topic()) = 'session-location:' || (select private.current_shopping_session_id())::text
   )
 );
