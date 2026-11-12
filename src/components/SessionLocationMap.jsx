@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { isValidLocation } from "../utils/locationSharing.js";
+import { getSpiderfiedPositions } from "../utils/mapMarkers.js";
 
 function createParticipantIcon(name) {
   const initial = String(name || "?").trim().charAt(0).toUpperCase() || "?";
@@ -20,7 +21,7 @@ function createParticipantIcon(name) {
 export default function SessionLocationMap({ locations = [] }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const layersRef = useRef(new Map());
+  const markerLayersRef = useRef([]);
   const fittedParticipantsRef = useRef("");
 
   useEffect(() => {
@@ -50,7 +51,8 @@ export default function SessionLocationMap({ locations = [] }) {
       resizeObserver?.disconnect();
       window.removeEventListener("resize", resizeMap);
       cancelAnimationFrame(resizeFrame);
-      layersRef.current.clear();
+      markerLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      markerLayersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -58,51 +60,74 @@ export default function SessionLocationMap({ locations = [] }) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map) return undefined;
 
     const validLocations = locations.filter((entry) => isValidLocation(entry));
-    const currentIds = new Set(validLocations.map((entry) => entry.userId));
+    const renderMarkers = () => {
+      markerLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      markerLayersRef.current = [];
 
-    layersRef.current.forEach((layer, userId) => {
-      if (!currentIds.has(userId)) {
-        map.removeLayer(layer);
-        layersRef.current.delete(userId);
-      }
-    });
-
-    validLocations.forEach((entry) => {
-      const position = [entry.latitude, entry.longitude];
-      const group = L.layerGroup();
-      const marker = L.marker(position, { icon: createParticipantIcon(entry.name) });
-      const tooltip = document.createElement("span");
-      tooltip.textContent = entry.name || "Participante";
-      marker.bindTooltip(tooltip, { direction: "top", offset: [0, -14] });
-      marker.addTo(group);
-
-      if (Number.isFinite(entry.accuracy) && entry.accuracy > 0) {
-        L.circle(position, {
-          radius: entry.accuracy,
-          className: "session-map-accuracy",
-          weight: 1,
-        }).addTo(group);
+      if (validLocations.length === 0) {
+        fittedParticipantsRef.current = "";
+        return;
       }
 
-      const previousLayer = layersRef.current.get(entry.userId);
-      if (previousLayer) map.removeLayer(previousLayer);
-      group.addTo(map);
-      layersRef.current.set(entry.userId, group);
-    });
+      const projected = validLocations.map((entry) => {
+        const point = map.latLngToLayerPoint([entry.latitude, entry.longitude]);
+        return { x: point.x, y: point.y };
+      });
+      const displayPoints = getSpiderfiedPositions(projected);
+      const layers = [];
 
-    if (validLocations.length > 0) {
+      validLocations.forEach((entry, index) => {
+        const actualPosition = L.latLng(entry.latitude, entry.longitude);
+        const displayPoint = displayPoints[index];
+        const displayPosition = map.layerPointToLatLng(L.point(displayPoint.x, displayPoint.y));
+        const group = L.layerGroup();
+        const marker = L.marker(displayPosition, { icon: createParticipantIcon(entry.name) });
+        const tooltip = document.createElement("span");
+        tooltip.textContent = entry.name || "Participante";
+        marker.bindTooltip(tooltip, { direction: "top", offset: [0, -14] });
+        marker.addTo(group);
+
+        if (displayPosition.distanceTo(actualPosition) > 1) {
+          L.polyline([actualPosition, displayPosition], {
+            color: "#40534d",
+            weight: 1.5,
+            opacity: 0.8,
+            interactive: false,
+          }).addTo(group);
+        }
+
+        if (Number.isFinite(entry.accuracy) && entry.accuracy > 0) {
+          L.circle(actualPosition, {
+            radius: entry.accuracy,
+            className: "session-map-accuracy",
+            weight: 1,
+          }).addTo(group);
+        }
+
+        group.addTo(map);
+        layers.push(group);
+      });
+
+      markerLayersRef.current = layers;
+
       const participantKey = validLocations.map((entry) => entry.userId).sort().join("|");
       if (participantKey !== fittedParticipantsRef.current) {
+        fittedParticipantsRef.current = participantKey;
         const bounds = L.latLngBounds(validLocations.map((entry) => [entry.latitude, entry.longitude]));
         if (bounds.isValid()) map.fitBounds(bounds.pad(validLocations.length > 1 ? 0.25 : 0.5), { maxZoom: 16 });
-        fittedParticipantsRef.current = participantKey;
       }
-    } else {
-      fittedParticipantsRef.current = "";
-    }
+    };
+
+    renderMarkers();
+    map.on("zoomend moveend", renderMarkers);
+    return () => {
+      map.off("zoomend moveend", renderMarkers);
+      markerLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      markerLayersRef.current = [];
+    };
   }, [locations]);
 
   return (

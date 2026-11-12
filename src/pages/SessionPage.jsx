@@ -8,13 +8,14 @@ const LOCATION_STALE_AFTER_MS = 90_000;
 function getGeolocationErrorMessage(error) {
   if (error?.code === 1) return "Permissão de localização negada. Autorize o acesso nas configurações do navegador.";
   if (error?.code === 2) return "Não foi possível determinar sua localização. Verifique o GPS do dispositivo.";
-  if (error?.code === 3) return "O GPS demorou para responder. Tente novamente em alguns instantes.";
-  return "Não foi possível acessar sua localização.";
+  if (error?.code === 3) return "O GPS demorou para responder. O compartilhamento foi interrompido; tente novamente.";
+  return "Não foi possível acessar sua localização. O compartilhamento foi interrompido.";
 }
 
 export default function SessionPage({ members = [], presence = {}, typing = {}, onLocationChange, onBack }) {
   const [now, setNow] = useState(Date.now());
   const [sharingLocation, setSharingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("idle");
   const [locationMessage, setLocationMessage] = useState("");
   const presenceByMember = useMemo(() => groupPresenceByUser(presence), [presence]);
 
@@ -30,18 +31,23 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
     }
 
     if (!navigator.geolocation) {
+      setLocationStatus("error");
       setLocationMessage("Este navegador não oferece suporte à geolocalização.");
       setSharingLocation(false);
+      onLocationChange?.(null);
       return undefined;
     }
 
     if (!window.isSecureContext) {
+      setLocationStatus("error");
       setLocationMessage("A localização exige uma conexão segura (HTTPS).");
       setSharingLocation(false);
+      onLocationChange?.(null);
       return undefined;
     }
 
     let active = true;
+    let failed = false;
     let watchId = null;
     let previousLocation = null;
     let visible = document.visibilityState === "visible";
@@ -56,31 +62,41 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
     };
 
     const startWatching = () => {
-      if (!active || !visible || watchId !== null) return;
+      if (!active || !visible || watchId !== null || failed) return;
+      setLocationStatus("requesting");
 
       try {
         watchId = navigator.geolocation.watchPosition(
           (position) => {
-            if (!active || !visible) return;
+            if (!active || !visible || failed) return;
             const nextLocation = normalizeGeolocationPosition(position);
-            if (!nextLocation || !shouldPublishLocation(nextLocation, previousLocation)) return;
+            if (!nextLocation) return;
 
-            previousLocation = nextLocation;
-            onLocationChange?.(nextLocation);
+            setLocationStatus("sharing");
             setLocationMessage(
               nextLocation.accuracy == null
                 ? "Sua localização está sendo compartilhada."
                 : `Sua localização está sendo compartilhada. Precisão aproximada: ${nextLocation.accuracy} m.`,
             );
+
+            if (!shouldPublishLocation(nextLocation, previousLocation)) return;
+            previousLocation = nextLocation;
+            onLocationChange?.(nextLocation);
           },
           (geolocationError) => {
-            if (!active) return;
+            if (!active || !visible || failed) return;
+            failed = true;
+            stopWatching();
+            setLocationStatus("error");
             setLocationMessage(getGeolocationErrorMessage(geolocationError));
-            if (geolocationError?.code === 1) setSharingLocation(false);
+            setSharingLocation(false);
           },
           { enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000 },
         );
       } catch {
+        failed = true;
+        stopWatching();
+        setLocationStatus("error");
         setLocationMessage("Não foi possível iniciar o compartilhamento de localização.");
         setSharingLocation(false);
       }
@@ -92,6 +108,7 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
         startWatching();
       } else {
         stopWatching();
+        setLocationStatus("paused");
         setLocationMessage("Compartilhamento pausado enquanto o site não está visível.");
       }
     };
@@ -128,6 +145,10 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
     return total;
   }, { online: 0, inactive: 0, offline: 0 }), [members, presenceByMember]);
 
+  const locationButtonLabel = locationStatus === "requesting"
+    ? "Cancelar solicitação"
+    : sharingLocation ? "Parar de compartilhar" : "Compartilhar localização";
+
   return (
     <main className="page-content session-page-content">
       <button className="back-button" onClick={onBack} type="button"><span aria-hidden="true">←</span> Voltar</button>
@@ -154,17 +175,28 @@ export default function SessionPage({ members = [], presence = {}, typing = {}, 
             aria-pressed={sharingLocation}
             className={sharingLocation ? "session-location-toggle active" : "session-location-toggle"}
             onClick={() => {
-              setLocationMessage(sharingLocation ? "Você parou de compartilhar sua localização." : "Solicitando acesso à localização...");
-              setSharingLocation((current) => !current);
+              if (sharingLocation) {
+                setSharingLocation(false);
+                setLocationStatus("idle");
+                setLocationMessage("Você parou de compartilhar sua localização.");
+                return;
+              }
+              setLocationMessage("Obtendo sua localização...");
+              setLocationStatus("requesting");
+              setSharingLocation(true);
             }}
             type="button"
           >
             <span aria-hidden="true">{sharingLocation ? "●" : "⌖"}</span>
-            {sharingLocation ? "Parar de compartilhar" : "Compartilhar localização"}
+            {locationButtonLabel}
           </button>
         </div>
 
-        {locationMessage && <p aria-live="polite" className="session-location-message" role="status">{locationMessage}</p>}
+        {locationMessage && (
+          <p aria-live="polite" className="session-location-message" role="status">
+            {locationMessage}
+          </p>
+        )}
 
         {mapLocations.length > 0 ? (
           <SessionLocationMap locations={mapLocations} />
