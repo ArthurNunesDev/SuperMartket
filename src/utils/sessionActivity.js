@@ -10,9 +10,12 @@ export function groupPresenceByUser(presence = {}) {
     }
 
     const priority = (status) => status === "online" ? 2 : status === "inactive" ? 1 : 0;
+    const currentActivityTime = Date.parse(current.lastActiveAt ?? "");
+    const nextActivityTime = Date.parse(entry.lastActiveAt ?? "");
     const preferred = priority(entry.status) > priority(current.status)
       || (priority(entry.status) === priority(current.status)
-        && Date.parse(entry.lastActiveAt ?? "") > Date.parse(current.lastActiveAt ?? ""))
+        && Number.isFinite(nextActivityTime)
+        && (!Number.isFinite(currentActivityTime) || nextActivityTime > currentActivityTime))
       ? entry
       : current;
 
