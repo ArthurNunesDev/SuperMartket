@@ -55,6 +55,7 @@ export default function App() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [sessionMembers, setSessionMembers] = useState([]);
+  const [sessionFeedback, setSessionFeedback] = useState("");
   const [presenceState, setPresenceState] = useState({});
   const [typingMembers, setTypingMembers] = useState({});
   const refreshCountRef = useRef(0);
@@ -218,6 +219,63 @@ export default function App() {
 
   function handleCreateSession() { return withAccessAction(createShoppingSession); }
   function handleSubmitPin(pin) { return withAccessAction(() => joinShoppingSession(pin)); }
+
+  async function copyToClipboard(value) {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const temporaryInput = document.createElement("textarea");
+    temporaryInput.value = value;
+    temporaryInput.setAttribute("readonly", "");
+    temporaryInput.style.position = "fixed";
+    temporaryInput.style.opacity = "0";
+    document.body.appendChild(temporaryInput);
+    temporaryInput.select();
+    const copied = document.execCommand("copy");
+    temporaryInput.remove();
+    if (!copied) throw new Error("Não foi possível copiar o conteúdo.");
+  }
+
+  async function handleCopySessionPin() {
+    if (!session?.pin) return;
+    try {
+      await copyToClipboard(session.pin);
+      setSessionFeedback("PIN copiado!");
+    } catch {
+      setSessionFeedback("Não foi possível copiar o PIN.");
+    }
+  }
+
+  async function handleShareSession() {
+    if (!session?.pin) return;
+    const appUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+    const shareText = `Entre na minha sessão do SuperMartket:\n\n${appUrl}\nPIN: ${session.pin}`;
+
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({
+          title: "Convite para sessão — SuperMartket",
+          text: shareText,
+          url: appUrl,
+        });
+        setSessionFeedback("Convite compartilhado.");
+        return;
+      }
+
+      await copyToClipboard(shareText);
+      setSessionFeedback("Convite copiado! Agora é só enviar.");
+    } catch (shareError) {
+      if (shareError?.name === "AbortError") return;
+      try {
+        await copyToClipboard(shareText);
+        setSessionFeedback("Não foi possível abrir o compartilhamento. Convite copiado!");
+      } catch {
+        setSessionFeedback("Não foi possível compartilhar o convite.");
+      }
+    }
+  }
 
   async function handleSubmitName(name) {
     const nextName = typeof name === "string" ? name.trim() : "";
@@ -444,7 +502,32 @@ export default function App() {
             {session?.pin && (
               <div className="sidebar-session">
                 <span>PIN DA SESSÃO</span>
-                <strong>{session.pin}</strong>
+                <div className="sidebar-session-actions">
+                  <button
+                    aria-label={`Copiar PIN ${session.pin}`}
+                    className="sidebar-session-pin"
+                    onClick={handleCopySessionPin}
+                    title="Copiar PIN"
+                    type="button"
+                  >
+                    {session.pin}
+                  </button>
+                  <button
+                    aria-label="Compartilhar convite da sessão"
+                    className="sidebar-session-share"
+                    onClick={handleShareSession}
+                    title="Compartilhar sessão"
+                    type="button"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4" />
+                    </svg>
+                  </button>
+                </div>
+                <small aria-live="polite" className="sidebar-session-feedback">{sessionFeedback || "Toque no PIN para copiar"}</small>
               </div>
             )}
           </div>
