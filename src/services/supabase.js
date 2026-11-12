@@ -285,7 +285,11 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
 
   const sendLocation = (location) => {
     if (!active || !locationSubscribed) return;
-    const payload = { userId, name, location };
+    const payload = {
+      userId,
+      name,
+      location: location ? { ...location, updatedAt: new Date().toISOString() } : null,
+    };
     locationSendQueue = locationSendQueue
       .catch(() => {})
       .then(async () => {
