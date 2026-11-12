@@ -21,6 +21,7 @@ function createParticipantIcon(name) {
 export default function SessionLocationMap({ locations = [] }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
+  const markerLayersRef = useRef([]);
   const fittedParticipantsRef = useRef("");
 
   useEffect(() => {
@@ -50,6 +51,8 @@ export default function SessionLocationMap({ locations = [] }) {
       resizeObserver?.disconnect();
       window.removeEventListener("resize", resizeMap);
       cancelAnimationFrame(resizeFrame);
+      markerLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      markerLayersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -61,25 +64,18 @@ export default function SessionLocationMap({ locations = [] }) {
 
     const validLocations = locations.filter((entry) => isValidLocation(entry));
     const renderMarkers = () => {
-      map.eachLayer((layer) => {
-        if (layer.options?.pane === "markerPane" || layer.options?.pane === "overlayPane") {
-          // Base tiles and controls are not stored in these panes.
-        }
-      });
-
-      const markerLayers = map._sessionMarkerLayers ?? [];
-      markerLayers.forEach((layer) => map.removeLayer(layer));
-      map._sessionMarkerLayers = [];
+      markerLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      markerLayersRef.current = [];
 
       if (validLocations.length === 0) {
         fittedParticipantsRef.current = "";
         return;
       }
 
-      const projected = validLocations.map((entry) => ({
-        x: map.latLngToLayerPoint([entry.latitude, entry.longitude]).x,
-        y: map.latLngToLayerPoint([entry.latitude, entry.longitude]).y,
-      }));
+      const projected = validLocations.map((entry) => {
+        const point = map.latLngToLayerPoint([entry.latitude, entry.longitude]);
+        return { x: point.x, y: point.y };
+      });
       const displayPoints = getSpiderfiedPositions(projected);
       const layers = [];
 
@@ -115,13 +111,13 @@ export default function SessionLocationMap({ locations = [] }) {
         layers.push(group);
       });
 
-      map._sessionMarkerLayers = layers;
+      markerLayersRef.current = layers;
 
       const participantKey = validLocations.map((entry) => entry.userId).sort().join("|");
       if (participantKey !== fittedParticipantsRef.current) {
+        fittedParticipantsRef.current = participantKey;
         const bounds = L.latLngBounds(validLocations.map((entry) => [entry.latitude, entry.longitude]));
         if (bounds.isValid()) map.fitBounds(bounds.pad(validLocations.length > 1 ? 0.25 : 0.5), { maxZoom: 16 });
-        fittedParticipantsRef.current = participantKey;
       }
     };
 
@@ -129,8 +125,8 @@ export default function SessionLocationMap({ locations = [] }) {
     map.on("zoomend moveend", renderMarkers);
     return () => {
       map.off("zoomend moveend", renderMarkers);
-      (map._sessionMarkerLayers ?? []).forEach((layer) => map.removeLayer(layer));
-      map._sessionMarkerLayers = [];
+      markerLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      markerLayersRef.current = [];
     };
   }, [locations]);
 
