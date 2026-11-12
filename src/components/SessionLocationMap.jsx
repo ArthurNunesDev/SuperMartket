@@ -11,7 +11,7 @@ function createParticipantIcon(name) {
 
   return L.divIcon({
     className: "session-map-marker-shell",
-    html: iconElement.outerHTML,
+    html: iconElement,
     iconSize: [36, 36],
     iconAnchor: [18, 18],
   });
@@ -44,11 +44,12 @@ export default function SessionLocationMap({ locations = [] }) {
     if (resizeObserver && containerRef.current) resizeObserver.observe(containerRef.current);
     const resizeMap = () => map.invalidateSize();
     window.addEventListener("resize", resizeMap);
-    requestAnimationFrame(resizeMap);
+    const resizeFrame = requestAnimationFrame(resizeMap);
 
     return () => {
       resizeObserver?.disconnect();
       window.removeEventListener("resize", resizeMap);
+      cancelAnimationFrame(resizeFrame);
       layersRef.current.clear();
       map.remove();
       mapRef.current = null;
@@ -80,7 +81,7 @@ export default function SessionLocationMap({ locations = [] }) {
 
       if (Number.isFinite(entry.accuracy) && entry.accuracy > 0) {
         L.circle(position, {
-          radius: Math.min(entry.accuracy, 5_000),
+          radius: entry.accuracy,
           className: "session-map-accuracy",
           weight: 1,
         }).addTo(group);
