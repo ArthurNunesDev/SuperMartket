@@ -266,6 +266,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   let currentLocation = null;
   let trackRequested = false;
   let trackInProgress = false;
+  let trackBlocked = false;
 
   const channel = supabase.channel(`session:${sessionId}`, {
     config: {
@@ -284,7 +285,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   };
 
   const flushPresence = async () => {
-    if (!active || !subscribed || trackInProgress || !trackRequested) return;
+    if (!active || !subscribed || trackInProgress || trackBlocked || !trackRequested) return;
 
     trackInProgress = true;
     try {
@@ -302,6 +303,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
         if (!active) return;
         if (result !== "ok") {
           trackRequested = true;
+          trackBlocked = true;
           reportPresenceError(null, "Não foi possível atualizar sua presença. A conexão será sincronizada novamente.");
           break;
         }
@@ -311,7 +313,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
       if (active) reportPresenceError(trackError, "Não foi possível atualizar sua presença.");
     } finally {
       trackInProgress = false;
-      if (active && subscribed && trackRequested) {
+      if (active && subscribed && trackRequested && !trackBlocked) {
         queueMicrotask(() => { void flushPresence(); });
       }
     }
@@ -320,6 +322,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
   const requestPresenceUpdate = () => {
     if (!active) return;
     trackRequested = true;
+    trackBlocked = false;
     if (subscribed) void flushPresence();
   };
 
@@ -431,6 +434,7 @@ export function subscribeToSessionActivity(sessionId, userId, name, onPresence, 
       if (!active) return;
       if (status === "SUBSCRIBED") {
         subscribed = true;
+        trackBlocked = false;
         lastActivityAt = Date.now();
         currentStatus = document.visibilityState === "visible" ? "online" : "inactive";
         requestPresenceUpdate();
