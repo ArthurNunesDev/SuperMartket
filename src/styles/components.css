@@ -1984,7 +1984,7 @@
   display: grid;
   place-items: center;
   border: 3px solid #fff;
-  border-radius: 50% 50% 50% 5px;
+  border-radius: 50%;
   color: #fff;
   background: var(--green);
   box-shadow: 0 2px 9px rgba(0, 0, 0, 0.3);
@@ -1992,8 +1992,6 @@
   font-weight: 800;
   transform: rotate(-45deg);
 }
-
-.session-map-marker::first-letter { transform: rotate(45deg); }
 
 .session-map-accuracy {
   fill: #176b50;
